@@ -7,6 +7,8 @@
 */
 
 #include <memory>
+#include <string>
+#include <vector>
 
 namespace Uri {
 
@@ -31,6 +33,51 @@ namespace Uri {
          * This is the default constructor
         */
        Uri();
+
+       /**
+        * This method build the URI from the elements parsed
+        * from the given string rendering of a URI
+        * 
+        * @param[in] uriString
+        *       This is the string rendering of the URI to parce.
+        * @return
+        *       whether or not the URI was parsed sucssefully is returnd.
+       */
+       bool ParseFromString(const std::string& uriString);
+
+        /**
+         * This method returns the "scheme" element of the URI.
+         * 
+         * @return
+         *      The "scheme" element of the URI.
+         * @retval ""
+         *      An empty string is returned if there is no "scheme" element in the URI.
+        */
+       std::string GetScheme() const;
+
+        /**
+         * This method returns the "host name" element of the URI.
+         * 
+         * @return
+         *      The "host name" element of the URI.
+         * 
+         * @retval ""
+         *      An empty string is returned if there is no "host name" element in the URI.
+        */
+       std::string GetHost() const;
+
+        /**
+         * This method returns the "path" element of the URI as a sequence of steps.
+         * 
+         * @note    
+         *      If the first sep of the path is an empty string, then 
+         *      the URI has an absolute path.
+         * 
+         * @return
+         *      The "path" element of the URI is returned 
+         *      as a sequence of segments
+        */
+       std::vector<std::string> GetPath() const;
 
        //private properties
     private:
