@@ -1,6 +1,6 @@
 # CMackeLists.txt for Uri
 #
-# c 2024 by Hatem Nabli
+# © 2024 by Hatem Nabli
 
 
 cmake_minimum_required(VERSION 3.8)
