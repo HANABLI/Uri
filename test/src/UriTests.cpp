@@ -16,14 +16,14 @@ TEST(UriTests, Placeholder) {
 
 TEST(UriTests, ParseFromStringUrl) {
     Uri::Uri uri;
-    ASSERT_TRUE(uri.ParseFromString("http://www.example.com/foo/bar"));
+    ASSERT_TRUE(uri.ParseFromString("http://www.example.com/library/book"));
     ASSERT_EQ("http", uri.GetScheme());
     ASSERT_EQ("www.example.com", uri.GetHost());
     ASSERT_EQ(
         (std::vector<std::string>{
         "",
-        "foo",
-        "bar",
+        "library",
+        "book",
     }), uri.GetPath());
     
 }
@@ -48,3 +48,39 @@ TEST(UriTests, ParseFromStringPathAllCases) {
         index++;
     }
 }
+
+TEST(UriTests, ParseFromUriStringHasPortNumber) {
+    Uri::Uri uri;
+    ASSERT_TRUE(uri.ParseFromString("http://www.example.com:8080/library/book"));
+    ASSERT_TRUE(uri.HasPort());
+    ASSERT_EQ(8080, uri.GetPort());
+}
+
+TEST(UriTests, ParseFromUriStringHasNoPortNumber) {
+    Uri::Uri uri;
+    ASSERT_TRUE(uri.ParseFromString("http://www.example.com/library/book"));
+    ASSERT_FALSE(uri.HasPort());
+}
+
+TEST(UriTest, ParseFromStringUriWithBadAlphabeticPortNumber) {
+    Uri::Uri uri;
+    ASSERT_FALSE(uri.ParseFromString("http://www.example.com:blabla/library/book"));
+}
+
+TEST(UriTest, ParseFromStringUriWithBadProtNumberStartsNumericEndsAlphabetic) {
+    Uri::Uri uri;
+    ASSERT_FALSE(uri.ParseFromString("http://www.example.com:8080blabla/library/book"));
+}
+
+TEST(UriTest, ParseFromStringUriLargestGoodPortNumber) {
+    Uri::Uri uri;
+    ASSERT_TRUE(uri.ParseFromString("http://www.example.com:65535/library/book"));
+    ASSERT_TRUE(uri.HasPort());
+    ASSERT_EQ(65535, uri.GetPort());
+}
+
+TEST(URiTest, ParseFromStringUriTooBigPortNumber) {
+    Uri::Uri uri;
+    ASSERT_FALSE(uri.ParseFromString("http://wwww.example.com:65536/library/book"));
+}
+
