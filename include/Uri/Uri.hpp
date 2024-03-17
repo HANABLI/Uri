@@ -5,8 +5,9 @@
  * 
  * © 2024 by Hatem Nabli
 */
-
+#include <inttypes.h>
 #include <memory>
+#include <stdio.h>
 #include <string>
 #include <vector>
 
@@ -75,9 +76,31 @@ namespace Uri {
          * 
          * @return
          *      The "path" element of the URI is returned 
-         *      as a sequence of segments
+         *      as a sequence of segments.
         */
        std::vector<std::string> GetPath() const;
+
+       /**
+        * This method returns an indication of whether or not the URI
+        * includes a port number.
+        * 
+        * @return
+        *       true if the URI includes a port number else false.
+       */
+       bool HasPort() const;
+
+
+        /**
+         * This method returns the port number of the UrI if it exists.
+         * 
+         * @return
+         *      The port number element of the URI 
+         * 
+         * @note
+         *      The returned port number is only valid if the
+         *      HasPort method returns true.
+        */
+       uint16_t GetPort() const;
 
        //private properties
     private:

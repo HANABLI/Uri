@@ -19,6 +19,8 @@ namespace Uri {
         std::string scheme;
         std::string host;
         std::vector<std::string> path;
+        uint16_t port = 0;
+        bool hasPort = false;
     };
     
     Uri::~Uri() = default;
@@ -40,12 +42,34 @@ bool Uri::Uri::ParseFromString(const std::string &uriString)
     // host parse
     if (next.substr(0, 2) == "//") {
         const auto authorityEnd = next.find('/', 2);
-        impl_->host = next.substr(2, authorityEnd - 2);
+        const auto portDelimiter = next.find(':');
+        if (portDelimiter == std::string::npos) {
+            impl_->host = next.substr(2, authorityEnd - 2);
+        }
+        else {
+            impl_->host = next.substr(2, portDelimiter - 2);
+            uint32_t newPort = 0;
+            for (auto c: next.substr(portDelimiter + 1, authorityEnd - portDelimiter - 1 )) {
+                if ((c < '0') || (c > '9') ) {
+                        return false;
+                    }
+                newPort *= 10;
+                newPort += (uint16_t)(c - '0');
+                if (
+                    (newPort & ~((1 << 16) - 1)) != 0
+                ) {
+                    return false;
+                } 
+            }
+            impl_->port = (uint16_t)newPort;
+            impl_->hasPort = true;
+        }
         next = next.substr(authorityEnd);
     } else {
         impl_->host.clear();
     }
 
+    // path parse
     impl_->path.clear();
     if (next._Equal("/"))
     {
@@ -79,4 +103,14 @@ std::string Uri::Uri::GetHost() const
 std::vector<std::string> Uri::Uri::GetPath() const
 {
     return impl_->path;
+}
+
+bool Uri::Uri::HasPort() const
+{
+    return impl_->hasPort;
+}
+
+uint16_t Uri::Uri::GetPort() const
+{
+    return impl_->port;
 }
