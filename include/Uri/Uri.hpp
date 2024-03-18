@@ -102,6 +102,45 @@ namespace Uri {
         */
        uint16_t GetPort() const;
 
+        /**
+         * This methode returns an indication of whether or not 
+         * the URI is a relative reference.
+         * 
+         * @return
+         *      An indication of wheter or not the URI is a relative reference.
+         *      return true if is a relative reference else false.
+        */
+       bool IsRelativeReference() const;
+
+
+        /**
+         * This methode returns an indication of whether or not 
+         * the URI is a relative path.
+         * 
+         * @return
+         *      An indiction of whether or not the URI is a relative path.
+         *      return true if is a relative path else false
+         * 
+        */
+       bool HasRelativePath() const;
+
+
+        /**
+         * This methode returns the query element of the Uri string if it exists.
+         * 
+         * @return
+         *      return the query item if it exist
+        */
+       std::string GetQuery() const;
+
+        /**
+         * This method returns the fragment of the Uri string if it exists.
+         * 
+         * @return
+         *      return the fragment if it exist
+        */
+       std::string GetFragment() const;
+
        //private properties
     private:
         /**
