@@ -9,12 +9,24 @@
 #include <gtest/gtest.h>
 #include <Uri/Uri.hpp>
 
-TEST(UriTests, Placeholder) {
+TEST(UriTests, Placeholder_Test) {
     Uri::Uri uri;
     ASSERT_TRUE(true);
 }
 
-TEST(UriTests, ParseFromStringUrl) {
+TEST(UriTests, ParseFromStrigUriNoScheme_Test) {
+    Uri::Uri uri;
+    ASSERT_TRUE(uri.ParseFromString("library/book"));
+    ASSERT_EQ("", uri.GetScheme());
+    ASSERT_EQ(
+        (std::vector<std::string>{
+            "library",
+            "book",
+        }), uri.GetPath()
+    );
+}
+
+TEST(UriTests, ParseFromStringUrl_Test) {
     Uri::Uri uri;
     ASSERT_TRUE(uri.ParseFromString("http://www.example.com/library/book"));
     ASSERT_EQ("http", uri.GetScheme());
@@ -28,7 +40,7 @@ TEST(UriTests, ParseFromStringUrl) {
     
 }
 
-TEST(UriTests, ParseFromStringPathAllCases) {
+TEST(UriTests, ParseFromStringPathAllCases_Test) {
     struct TestCasesVector
     {
         std::string pathIn;
@@ -49,38 +61,138 @@ TEST(UriTests, ParseFromStringPathAllCases) {
     }
 }
 
-TEST(UriTests, ParseFromUriStringHasPortNumber) {
+TEST(UriTests, ParseFromUriStringHasPortNumber_Test) {
     Uri::Uri uri;
     ASSERT_TRUE(uri.ParseFromString("http://www.example.com:8080/library/book"));
     ASSERT_TRUE(uri.HasPort());
     ASSERT_EQ(8080, uri.GetPort());
 }
 
-TEST(UriTests, ParseFromUriStringHasNoPortNumber) {
+TEST(UriTests, ParseFromUriStringHasNoPortNumber_Test) {
     Uri::Uri uri;
     ASSERT_TRUE(uri.ParseFromString("http://www.example.com/library/book"));
     ASSERT_FALSE(uri.HasPort());
 }
 
-TEST(UriTest, ParseFromStringUriWithBadAlphabeticPortNumber) {
+TEST(UriTest, ParseFromStringUriWithBadAlphabeticPortNumber_Test) {
     Uri::Uri uri;
     ASSERT_FALSE(uri.ParseFromString("http://www.example.com:blabla/library/book"));
 }
 
-TEST(UriTest, ParseFromStringUriWithBadProtNumberStartsNumericEndsAlphabetic) {
+TEST(UriTest, ParseFromStringUriWithBadProtNumberStartsNumericEndsAlphabetic_Test) {
     Uri::Uri uri;
     ASSERT_FALSE(uri.ParseFromString("http://www.example.com:8080blabla/library/book"));
 }
 
-TEST(UriTest, ParseFromStringUriLargestGoodPortNumber) {
+TEST(UriTest, ParseFromStringUriLargestGoodPortNumber_Test) {
     Uri::Uri uri;
     ASSERT_TRUE(uri.ParseFromString("http://www.example.com:65535/library/book"));
     ASSERT_TRUE(uri.HasPort());
     ASSERT_EQ(65535, uri.GetPort());
 }
 
-TEST(URiTest, ParseFromStringUriTooBigPortNumber) {
+TEST(URiTest, ParseFromStringUriTooBigPortNumber_Test) {
     Uri::Uri uri;
     ASSERT_FALSE(uri.ParseFromString("http://wwww.example.com:65536/library/book"));
 }
 
+TEST(UriTests, ParseFromStringIsRelativeReference_Test) {
+    struct TestVector
+    {
+        std::string uriString;
+        bool isRelativeReference;
+    };
+    const std::vector<TestVector> testVectors {
+        {"http://www.example.com/", false},
+        {"http://www.example.com", false},
+        {"/", true},
+        {"book", true},
+    };
+    size_t index = 0;
+    for (const auto& test: testVectors) {
+        Uri::Uri uri;
+        ASSERT_TRUE(uri.ParseFromString(test.uriString)) << index;
+        ASSERT_EQ(test.isRelativeReference, uri.IsRelativeReference()) << index;
+        ++index;
+    } 
+    
+}
+
+TEST(UriTests, ParseFromStringIsRelativePath_Test) {
+    struct TestVector
+    {
+        std::string uriString;
+        bool hasRelativePath;
+    };
+    const std::vector<TestVector> testVectors {
+        {"http://www.example.com/", false},
+        {"http://www.example.com", true},
+        {"/", false},
+        {"book", true},
+        /*
+         * This is only a vlid test vector if we confirm that 
+         * an empty string is a valid
+         * "relative reference" URI with an empty path
+         */
+        {"", true},
+    };
+    size_t index = 0;
+    for (const auto& test: testVectors) {
+        Uri::Uri uri;
+        ASSERT_TRUE(uri.ParseFromString(test.uriString)) << index;
+        ASSERT_EQ(test.hasRelativePath, uri.HasRelativePath()) << index;
+        ++index;
+    }   
+}
+
+TEST(UriTests, ParseFromStringUriFragments_Test) {
+    struct TestVector
+    {
+        std::string uriString;
+        std::string host;
+        std::string fragment;
+    };
+    const std::vector<TestVector> testVectors {
+        {"http://www.example.com/", "www.example.com", ""},
+        {"http://www.example.com?library", "www.example.com", ""},
+        {"http://www.example.com#book", "www.example.com", "book"},
+        {"http://www.example.com?library#book", "www.example.com", "book"},
+        {"http://www.example.com/University?library#book", "www.example.com", "book"},
+    };
+
+    size_t index = 0;
+    for (const auto& test: testVectors) {
+        Uri::Uri uri;
+        ASSERT_TRUE(uri.ParseFromString(test.uriString)) << index;
+        ASSERT_EQ(test.host, uri.GetHost()) << index;
+        ASSERT_EQ(test.fragment, uri.GetFragment()) << index;
+        ++index;
+    }        
+} 
+
+TEST(UriTests, ParseFromStringUriQuery_Test) {
+       struct TestVector
+    {
+        std::string uriString;
+        std::string host;
+        std::string query;
+        std::string fragment;
+    };
+    const std::vector<TestVector> testVectors {
+        {"http://www.example.com/", "www.example.com", "", ""},
+        {"http://www.example.com?library", "www.example.com", "library", ""},
+        {"http://www.example.com#book", "www.example.com", "", "book"},
+        {"http://www.example.com?library#book", "www.example.com", "library", "book"},
+        {"http://www.example.com/University?library#book", "www.example.com", "library", "book"},
+    };
+
+    size_t index = 0;
+    for (const auto& test: testVectors) {
+        Uri::Uri uri;
+        ASSERT_TRUE(uri.ParseFromString(test.uriString)) << index;
+        ASSERT_EQ(test.host, uri.GetHost()) << index;
+        ASSERT_EQ(test.query, uri.GetQuery()) <<index;
+        ASSERT_EQ(test.fragment, uri.GetFragment()) << index;
+        ++index;
+    }         
+}
