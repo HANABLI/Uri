@@ -81,6 +81,41 @@ namespace Uri {
          * This is the User info structure.
         */
         UserInfo userInfo;
+
+        // Methods
+        /**
+         * This method builds the internal path element sequence
+         * by parsing it from the given path string.
+         * 
+         * @param[in] pathString
+         *      This is the whole path of the Uri.
+         * 
+         * @return
+         *      An indication if the path was parsed correctly or not
+         *      is returned.
+        */
+        bool ParsePath(std::string pathString) {
+            path.clear();
+            if (pathString._Equal("/"))
+            {
+                // Special case of an empty path.
+                path.push_back("");
+                pathString.clear();
+            } else if (!pathString.empty()) {
+                for(;;) {
+                    auto delimiter = pathString.find('/');
+                    if (delimiter == std::string::npos) {
+                        path.push_back(pathString);
+                        pathString.clear();
+                        break;
+                    } else {
+                        path.emplace_back(pathString.begin(), pathString.begin() + delimiter);
+                        pathString = pathString.substr(delimiter + 1);
+                    }           
+                }    
+            }
+            return true;
+        }
     };
     
     Uri::~Uri() = default;
@@ -158,24 +193,10 @@ namespace Uri {
         }
 
         // path parse
-        impl_->path.clear();
-        if (next._Equal("/"))
-        {
-            // Special case of an empty path.
-            impl_->path.push_back("");
-            next.clear();
-        } else if (!next.empty()) {
-            for(;;) {
-                auto delimiter = next.find('/');
-                if (delimiter == std::string::npos) {
-                    impl_->path.push_back(next);
-                    break;
-                } else {
-                    impl_->path.emplace_back(next.begin(), next.begin() + delimiter);
-                    next = next.substr(delimiter + 1);
-                }           
-            }    
+        if(!impl_->ParsePath(next)) {
+            return false;
         }
+        
 
         const auto fragmentDelimiter = next.find('#');
         if (fragmentDelimiter == std::string::npos) {
