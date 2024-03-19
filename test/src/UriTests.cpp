@@ -180,6 +180,7 @@ TEST(UriTests, ParseFromStringUriQuery_Test) {
     };
     const std::vector<TestVector> testVectors {
         {"http://www.example.com/", "www.example.com", "", ""},
+        {"http://www.example.com/?", "www.example.com", "", ""},
         {"http://www.example.com?library", "www.example.com", "library", ""},
         {"http://www.example.com#book", "www.example.com", "", "book"},
         {"http://www.example.com?library#book", "www.example.com", "library", "book"},
@@ -195,4 +196,42 @@ TEST(UriTests, ParseFromStringUriQuery_Test) {
         ASSERT_EQ(test.fragment, uri.GetFragment()) << index;
         ++index;
     }         
+}
+
+TEST(UriTests, ParseFromStringUriUserInfo_Test) {
+    struct TestVector {
+        std::string uriString;
+        struct UserInfo
+        {
+            std::string name;
+            std::string pass;
+        } userInfo;       
+    };
+
+    const std::vector<TestVector> testVectors {
+        {"http://www.example.com/", {"", ""}},
+        {"http://hnab@www.example.com", {"hnab", ""}},
+        {"http://hnab:password@www.example.com", {"hnab", "password"}},
+        {"//www.example.com", {"", ""}},
+        {"//hnab@www.example.com/", {"hnab", ""}},
+        {"/", {"", ""}},
+        {"book", {"", ""}},
+    };
+    size_t index = 0;
+    for (const auto& test: testVectors ) {
+        Uri::Uri uri ;
+        ASSERT_TRUE(uri.ParseFromString(test.uriString)) << index;
+        ASSERT_EQ(test.userInfo.name, uri.GetUserInfo().name) << index;
+        ASSERT_EQ(test.userInfo.pass, uri.GetUserInfo().pass) << index;
+        ++index;
+    }
+}
+
+TEST(UriTests, ParseStringUriTwiceFirstUserInfoThenWithout) {
+    Uri::Uri uri;
+
+    ASSERT_TRUE(uri.ParseFromString("http://joe@www.example.com/foo/bar"));
+    ASSERT_TRUE(uri.ParseFromString("/foo/bar"));
+    ASSERT_TRUE(uri.GetUserInfo().name.empty());
+    
 }

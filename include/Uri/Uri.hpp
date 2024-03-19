@@ -12,6 +12,18 @@
 #include <vector>
 
 namespace Uri {
+    /**
+     * This struct represents the user informations element
+    */
+    struct UserInfo
+    {
+        std::string name;
+        std::string pass;
+        void clear() {
+            name.clear();
+            pass.clear();
+        }
+    };      
 
     /**
      * This class represents a Uniform Resource Identifier (URI),
@@ -140,6 +152,15 @@ namespace Uri {
          *      return the fragment if it exist
         */
        std::string GetFragment() const;
+
+
+        /**
+         * This method returns the User information element.
+         * 
+         * @return
+         *      return the user name and password structure
+        */
+       UserInfo GetUserInfo() const;
 
        //private properties
     private:

@@ -8,6 +8,40 @@
 
 #include <Uri/Uri.hpp>
 
+namespace {
+    /**
+     * This fuction parses the given string as an unsigned 16-bit
+     * integer, detecting invalid characters, overflow, etc..
+     * 
+     * @param[in] numberString
+     *      This is the string containing the number to parse.
+     * 
+     * @param[out] number
+     *      This is where to store the number parsed.
+     * 
+     * @return
+     *      An indication of whether or not the number was parsed
+     *      successfully is returned. 
+    */
+    bool ParseUint16(const std::string& numberString, uint16_t& number) {
+        uint32_t number32Bits = 0;
+        for (auto c: numberString) {
+            if ((c < '0') || (c > '9') ) {
+                    return false;
+                }
+            number32Bits *= 10;
+            number32Bits += (uint16_t)(c - '0');
+            if (
+                (number32Bits & ~((1 << 16) - 1)) != 0
+            ) {
+                return false;
+            } 
+        }
+        number = (uint16_t)number32Bits;
+        return true;
+    }
+}
+
 namespace Uri {
     /**
      * This contains the private properties of Uri instance.
@@ -43,6 +77,10 @@ namespace Uri {
          * This is the fragment element of the Uri.
         */
         std::string fragment;
+        /**
+         * This is the User info structure.
+        */
+        UserInfo userInfo;
     };
     
     Uri::~Uri() = default;
@@ -67,40 +105,55 @@ namespace Uri {
         
         // host parse
         if (next.substr(0, 2) == "//") {
-            auto authorityEnd = next.find('/', 2);
-            if (authorityEnd == std::string::npos) {
-                authorityEnd = next.find('?', 2);
-                if (authorityEnd == std::string::npos) {
-                    authorityEnd = next.find('#', 2);
-                    if (authorityEnd == std::string::npos) {
-                        authorityEnd = next.length();   
-                    }
-                }      
+            
+            next = next.substr(2);
+            
+            auto userInfoEnd = next.find('@');
+            if (userInfoEnd == std::string::npos) {
+                impl_->userInfo.name.clear();
+                impl_->userInfo.pass.clear();
+            } else {
+                std::string userInfo = next.substr(0, userInfoEnd );
+                const auto userInfoDelimiter = userInfo.find(':');
+                if ( userInfoDelimiter == std::string::npos) {
+                    impl_->userInfo.name = userInfo;
+                } else {
+                    impl_->userInfo.name = userInfo.substr(0, userInfoDelimiter);
+                    impl_->userInfo.pass = userInfo.substr(userInfoDelimiter + 1);
+                }
+                next = next.substr(userInfoEnd + 1);
             }
+
+            auto authorityEnd = next.find('/');
+            if (authorityEnd == std::string::npos) {
+                authorityEnd = next.find('?');
+                if (authorityEnd == std::string::npos) {
+                    authorityEnd = next.find('#');
+                    if (authorityEnd == std::string::npos) {
+                        authorityEnd = next.length();
+                    }
+                }
+            }
+
             const auto portDelimiter = next.find(':');
             if (portDelimiter == std::string::npos) {
-                impl_->host = next.substr(2, authorityEnd - 2);
+                impl_->host = next.substr(0, authorityEnd );
+                impl_->hasPort = false;
             }
             else {
-                impl_->host = next.substr(2, portDelimiter - 2);
-                uint32_t newPort = 0;
-                for (auto c: next.substr(portDelimiter + 1, authorityEnd - portDelimiter - 1 )) {
-                    if ((c < '0') || (c > '9') ) {
-                            return false;
-                        }
-                    newPort *= 10;
-                    newPort += (uint16_t)(c - '0');
-                    if (
-                        (newPort & ~((1 << 16) - 1)) != 0
-                    ) {
-                        return false;
-                    } 
+                impl_->host = next.substr(0, portDelimiter );
+                const auto portString = next.substr(portDelimiter + 1, authorityEnd - portDelimiter - 1 );
+                if (
+                    !ParseUint16(portString, impl_->port)
+                ) {
+                    return false;
                 }
-                impl_->port = (uint16_t)newPort;
                 impl_->hasPort = true;
             }
             next = next.substr(authorityEnd);
         } else {
+            //no host so neither userInfo 
+            impl_->userInfo.clear();
             impl_->host.clear();
         }
 
@@ -139,7 +192,6 @@ namespace Uri {
             } else {
                 impl_->query = next.substr(queryDelimiter + 1);
             }
-        
         }
         return true;
     }
@@ -192,5 +244,9 @@ namespace Uri {
         return impl_->fragment;
     }
 
+    UserInfo Uri::GetUserInfo() const
+    {
+        return impl_->userInfo;
+    }
 }
 
