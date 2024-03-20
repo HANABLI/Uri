@@ -227,11 +227,54 @@ TEST(UriTests, ParseFromStringUriUserInfo_Test) {
     }
 }
 
-TEST(UriTests, ParseStringUriTwiceFirstUserInfoThenWithout) {
+TEST(UriTests, UriTests_ParseStringUriTwiceFirstUserInfoThenWithout_Test) {
     Uri::Uri uri;
 
     ASSERT_TRUE(uri.ParseFromString("http://joe@www.example.com/foo/bar"));
     ASSERT_TRUE(uri.ParseFromString("/foo/bar"));
     ASSERT_TRUE(uri.GetUserInfo().name.empty());
     
+}
+
+TEST(UriTests, UriTests_ParseFromStringSchemeIllegalCharacters_Test) {
+    struct TestVector {
+        std::string uriString;
+    };
+    const std::vector< TestVector > testVectors {
+        {"://www.example.com"},
+        {"0://www.example.com"},
+        {"+://www.example.com"},
+        {"@://www.example.com"},
+        {".://www.example.com"},
+        {"h@://www.example.com"},
+    };
+    size_t index = 0;
+    for(const auto& test: testVectors) {
+        Uri::Uri uri;
+        ASSERT_FALSE(uri.ParseFromString(test.uriString)) <<index;
+        ++index;
+    }    
+}
+
+TEST(UriTests, UriTests_ParseFromStringSchemeBarelyLegal_Test) {
+    struct TestVector {
+        std::string uriString;
+        std::string scheme;
+    };
+    const std::vector<TestVector> testVectors {
+        
+        {"h://www.example.com", "h"},
+        {"a+://www.example.com", "a+"},
+        {"b-://www.example.com", "b-"},
+        {"c.://www.example.com", "c."},
+        {"aa://www.example.com", "aa"},
+        {"h0://www.example.com", "h0"},
+    };
+    size_t index = 0;
+    for(const auto& test: testVectors) {
+        Uri::Uri uri;
+        ASSERT_TRUE(uri.ParseFromString(test.uriString)) <<index;
+        ASSERT_EQ(test.scheme, uri.GetScheme()) <<index;
+        ++index;
+    }    
 }

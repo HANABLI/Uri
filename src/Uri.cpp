@@ -40,6 +40,72 @@ namespace {
         number = (uint16_t)number32Bits;
         return true;
     }
+
+    /**
+     * This function takes a given "stillPassing" strategy
+     * and invokes it on the sequence of characters in the given
+     * string, to check if the string passes or not.
+     * 
+     * @param[in] candidate
+     *      This is the string to test.
+     * @param[in] stillOkStrategy
+     *      This is the strategy to invoke in the order to test the string.
+     * @return
+     *      An indication of whether or not the given candidate string
+     *      passes the test strategy is returned.
+    */
+    bool FailsMatch( const std::string& candidate, 
+        std::function<bool(char, bool)> stillOkStrategy) {
+            for (const auto c: candidate) {
+                if(!stillOkStrategy(c, false)) {
+                    return true;
+                }
+            }
+            return !stillOkStrategy(' ', true);
+    }
+    /**
+     * This function returns a strategy function that 
+     * my be used with the FailsMatch function to test a scheme
+     * and make sure it is legal according to the standard.
+     * 
+     * @return
+     *      returns a strategy function that 
+     *      my be used with the FailsMatch function to test a scheme
+     *      and make sure it is legal according to the standard.
+    */
+    std::function<bool(char, bool)> LegalSchemeStartegy()  {
+        bool isFirstCharacter = true;
+        return [&isFirstCharacter](char c, bool end) {
+                if (end) {
+                    return !isFirstCharacter;
+                } else {
+                    bool check;
+                    if(isFirstCharacter) {
+                        check = (
+                            ((c >= 'a') && (c <= 'z'))
+                            ||
+                            ((c >= 'A') && (c <= 'Z'))
+                        );
+                    } else {
+                        check = (
+                            ((c >= 'a') && (c <= 'z'))
+                            ||
+                            ((c >= 'A') && (c <= 'Z'))
+                            ||
+                            ((c >= '0') && (c <= '9'))
+                            || 
+                            (c == '+')
+                            ||
+                            (c == '-')
+                            ||
+                            (c == '.')
+                        );
+                    }
+                    isFirstCharacter = false;
+                    return check;
+                }            
+            };
+    }
 }
 
 namespace Uri {
@@ -194,61 +260,25 @@ namespace Uri {
             next = uriString;
         } else {
             impl_->scheme = uriString.substr(0, schemeEnd);
+            if(FailsMatch(impl_->scheme, LegalSchemeStartegy())) {
+                return false;
+            }
             next = uriString.substr(schemeEnd + 1);
         }
         
-        // host parse
         if (next.substr(0, 2) == "//") {
             
             next = next.substr(2);
+            // authority parse
+            if(!impl_->ParseAuthority(next)) {
+                return false;
+            }
             
-            auto userInfoEnd = next.find('@');
-            if (userInfoEnd == std::string::npos) {
-                impl_->userInfo.name.clear();
-                impl_->userInfo.pass.clear();
-            } else {
-                std::string userInfo = next.substr(0, userInfoEnd );
-                const auto userInfoDelimiter = userInfo.find(':');
-                if ( userInfoDelimiter == std::string::npos) {
-                    impl_->userInfo.name = userInfo;
-                } else {
-                    impl_->userInfo.name = userInfo.substr(0, userInfoDelimiter);
-                    impl_->userInfo.pass = userInfo.substr(userInfoDelimiter + 1);
-                }
-                next = next.substr(userInfoEnd + 1);
-            }
-
-            auto authorityEnd = next.find('/');
-            if (authorityEnd == std::string::npos) {
-                authorityEnd = next.find('?');
-                if (authorityEnd == std::string::npos) {
-                    authorityEnd = next.find('#');
-                    if (authorityEnd == std::string::npos) {
-                        authorityEnd = next.length();
-                    }
-                }
-            }
-
-            const auto portDelimiter = next.find(':');
-            if (portDelimiter == std::string::npos) {
-                impl_->host = next.substr(0, authorityEnd );
-                impl_->hasPort = false;
-            }
-            else {
-                impl_->host = next.substr(0, portDelimiter );
-                const auto portString = next.substr(portDelimiter + 1, authorityEnd - portDelimiter - 1 );
-                if (
-                    !ParseUint16(portString, impl_->port)
-                ) {
-                    return false;
-                }
-                impl_->hasPort = true;
-            }
-            next = next.substr(authorityEnd);
         } else {
             //no host so neither userInfo 
             impl_->userInfo.clear();
             impl_->host.clear();
+            impl_->hasPort = false;
         }
 
         // path parse

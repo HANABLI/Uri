@@ -5,6 +5,7 @@
  * 
  * © 2024 by Hatem Nabli
 */
+#include <functional>
 #include <inttypes.h>
 #include <memory>
 #include <stdio.h>
