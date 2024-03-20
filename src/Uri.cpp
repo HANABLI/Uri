@@ -63,6 +63,21 @@ namespace {
             }
             return !stillOkStrategy(' ', true);
     }
+
+
+    bool IsCharacterInSet(char c, std::initializer_list< char > characterSet) {
+        for(auto charSet = characterSet.begin();
+            charSet != characterSet.end();
+            ++charSet) {
+                const auto first = *charSet++;
+                const auto last = *charSet;
+            if ((c >= first) && (c <= last)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * This function returns a strategy function that 
      * my be used with the FailsMatch function to test a scheme
@@ -74,34 +89,19 @@ namespace {
      *      and make sure it is legal according to the standard.
     */
     std::function<bool(char, bool)> LegalSchemeStartegy()  {
-        bool isFirstCharacter = true;
-        return [&isFirstCharacter](char c, bool end) {
+        auto isFirstCharacter = std::make_shared<bool>(true);
+        return [isFirstCharacter](char c, bool end) {
                 if (end) {
-                    return !isFirstCharacter;
+                    return !*isFirstCharacter;
                 } else {
                     bool check;
-                    if(isFirstCharacter) {
-                        check = (
-                            ((c >= 'a') && (c <= 'z'))
-                            ||
-                            ((c >= 'A') && (c <= 'Z'))
-                        );
+                    if(*isFirstCharacter) {
+                        check = IsCharacterInSet(c, {'a', 'z', 'A', 'Z'});
                     } else {
-                        check = (
-                            ((c >= 'a') && (c <= 'z'))
-                            ||
-                            ((c >= 'A') && (c <= 'Z'))
-                            ||
-                            ((c >= '0') && (c <= '9'))
-                            || 
-                            (c == '+')
-                            ||
-                            (c == '-')
-                            ||
-                            (c == '.')
-                        );
+                        check = IsCharacterInSet(c, {'a', 'z', 'A', 'Z', '0', '9', '+', '+', '-', '-', '.', '.'});
+
                     }
-                    isFirstCharacter = false;
+                    *isFirstCharacter = false;
                     return check;
                 }            
             };
