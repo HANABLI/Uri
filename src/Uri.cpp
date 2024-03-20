@@ -116,6 +116,65 @@ namespace Uri {
             }
             return true;
         }
+
+        /**
+         * This method parses the elemnets that  make up the authority
+         * composite section of the Uri.
+         * 
+         * @param[in] authority
+         *      This is the string containing the whole authority part of the Uri.
+         * 
+         * @return
+         *      An indication if the 
+         * 
+        */
+        bool ParseAuthority(std::string& authorityString) {
+            // user info parse
+            auto userInfoEnd = authorityString.find('@');
+            if (userInfoEnd == std::string::npos) {
+                userInfo.name.clear();
+                userInfo.pass.clear();
+            } else {
+                std::string uriUserInfo = authorityString.substr(0, userInfoEnd );
+                const auto userInfoDelimiter = uriUserInfo.find(':');
+                if ( userInfoDelimiter == std::string::npos) {
+                    userInfo.name = uriUserInfo;
+                } else {
+                    userInfo.name = uriUserInfo.substr(0, userInfoDelimiter);
+                    userInfo.pass = uriUserInfo.substr(userInfoDelimiter + 1);
+                }
+                authorityString = authorityString.substr(userInfoEnd + 1);
+            }
+
+            auto authorityEnd = authorityString.find('/');
+            if (authorityEnd == std::string::npos) {
+                authorityEnd = authorityString.find('?');
+                if (authorityEnd == std::string::npos) {
+                    authorityEnd = authorityString.find('#');
+                    if (authorityEnd == std::string::npos) {
+                        authorityEnd = authorityString.length();
+                    }
+                }
+            }
+            // host parse
+            const auto portDelimiter = authorityString.find(':');
+            if (portDelimiter == std::string::npos) {
+                host = authorityString.substr(0, authorityEnd );
+                hasPort = false;
+            }
+            else {
+                host = authorityString.substr(0, portDelimiter );
+                const auto portString = authorityString.substr(portDelimiter + 1, authorityEnd - portDelimiter - 1 );
+                if (
+                    !ParseUint16(portString, port)
+                ) {
+                    return false;
+                }
+                hasPort = true;
+            }
+            authorityString = authorityString.substr(authorityEnd);
+            return true;
+        }
     };
     
     Uri::~Uri() = default;
