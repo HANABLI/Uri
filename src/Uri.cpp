@@ -202,12 +202,62 @@ namespace Uri {
                 userInfo.pass.clear();
             } else {
                 std::string uriUserInfo = authorityString.substr(0, userInfoEnd );
-                const auto userInfoDelimiter = uriUserInfo.find(':');
+                size_t decoderState = 0;
+                std::string userInfodecoded;
+                int decodedCharacter = 0;
+                //State Machine pattern
+                for (const auto c: uriUserInfo) {
+                    switch (decoderState)
+                    {
+                        case 0: {
+                            if (c == '%') {
+                                decoderState = 1;
+                            } else {
+                                if (IsCharacterInSet(c, {'a', 'z', 'A', 'Z', '0', '9', 
+                                '-', '-', '.', '.', '_', '_', '~', '~', 
+                                '!', '!', '$', '$', '&', '&', '\'', '\'', '(', '(', ')', ')', 
+                                '*', '*', '+', '+', ',', ',', ';', ';', '=', '=',
+                                ':', ':'})) {
+                                    userInfodecoded.push_back(c);
+                                }
+                                else {
+                                    return false;
+                                }
+                            }
+                        } break;
+                        
+                        case 1: {
+                            decoderState = 2;
+                            decodedCharacter <<= 4;
+                            if (IsCharacterInSet(c, {'0', '9'})) {
+                                decodedCharacter += (int)(c - '0');
+                            } else if (IsCharacterInSet(c, {'A', 'F'})) {
+                                decodedCharacter += (int)(c - 'A') + 10;
+                            } else {
+                                return false;
+                            }
+                        } break;
+
+                        case 2: { // %[0-9A-F] ...
+                                decodedCharacter <<= 4;
+                                decoderState = 0;
+                            if (IsCharacterInSet(c, {'0', '9'})) {                         
+                                decodedCharacter += (int)(c - '0');                      
+                            } else if (IsCharacterInSet(c, {'A', 'F'})) {
+                                decodedCharacter += (int)(c - 'A') + 10;
+                            } else {
+                                return false;
+                            }
+                            userInfodecoded.push_back((char)decodedCharacter);
+                        } break;
+                    }
+                }
+                const auto userInfoDelimiter = userInfodecoded.find(':');
                 if ( userInfoDelimiter == std::string::npos) {
-                    userInfo.name = uriUserInfo;
+                    userInfo.name = userInfodecoded;
                 } else {
-                    userInfo.name = uriUserInfo.substr(0, userInfoDelimiter);
-                    userInfo.pass = uriUserInfo.substr(userInfoDelimiter + 1);
+                    userInfo.name = userInfodecoded.substr(0, userInfoDelimiter);
+                    userInfo.pass = userInfodecoded.substr(userInfoDelimiter + 1);
                 }
                 authorityString = authorityString.substr(userInfoEnd + 1);
             }
