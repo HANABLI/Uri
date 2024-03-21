@@ -241,12 +241,12 @@ TEST(UriTests, UriTests_ParseFromStringSchemeIllegalCharacters_Test) {
         std::string uriString;
     };
     const std::vector< TestVector > testVectors {
-        {"://www.example.com"},
-        {"0://www.example.com"},
-        {"+://www.example.com"},
-        {"@://www.example.com"},
-        {".://www.example.com"},
-        {"h@://www.example.com"},
+        {"://www.example.com/"},
+        {"0://www.example.com/"},
+        {"+://www.example.com/"},
+        {"@://www.example.com/"},
+        {".://www.example.com/"},
+        {"h@://www.example.com/"},
     };
     size_t index = 0;
     for(const auto& test: testVectors) {
@@ -275,6 +275,48 @@ TEST(UriTests, UriTests_ParseFromStringSchemeBarelyLegal_Test) {
         Uri::Uri uri;
         ASSERT_TRUE(uri.ParseFromString(test.uriString)) <<index;
         ASSERT_EQ(test.scheme, uri.GetScheme()) <<index;
+        ++index;
+    }    
+}
+
+TEST(UriTests, ParseFromStringUriUserInfoIllegalCharacters) {
+        struct TestVector {
+        std::string uriString;
+    };
+    const std::vector< TestVector > testVectors{
+        {"http://%X@www.example.com/"},
+        {"http://{@www.example.com/"},
+    }; 
+    size_t index = 0;
+    for(const auto& test: testVectors) {
+        Uri::Uri uri;
+        ASSERT_FALSE(uri.ParseFromString(test.uriString)) << index;
+        ++index;
+    }
+}
+
+TEST(UriTests, UriTests_ParseFromStringUserInfoBarelyLegal_Test) {
+    struct TestVector {
+        std::string uriString;
+        std::string user;
+        std::string pass;
+    };
+    const std::vector<TestVector> testVectors {
+        
+        {"//%41@www.example.com", "A",""},
+        {"//@www.example.com", "",""},
+        {"//!@www.example.com", "!",""},
+        {"//'@www.example.com", "'",""},
+        {"//(@www.example.com", "(",""},
+        {"//;@www.example.com", ";",""},
+        {"http://:@www.example.com", "",""},
+    };
+    size_t index = 0;
+    for(const auto& test: testVectors) {
+        Uri::Uri uri;
+        ASSERT_TRUE(uri.ParseFromString(test.uriString)) <<index;
+        ASSERT_EQ(test.user, uri.GetUserInfo().name) <<index;
+        ASSERT_EQ(test.pass, uri.GetUserInfo().pass) <<index;
         ++index;
     }    
 }
