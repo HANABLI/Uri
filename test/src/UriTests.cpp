@@ -320,3 +320,61 @@ TEST(UriTests, UriTests_ParseFromStringUserInfoBarelyLegal_Test) {
         ++index;
     }    
 }
+
+TEST(UriTests, ParseFromStringUriHostNameIllegalCharacters) {
+        struct TestVector {
+        std::string uriString;
+    };
+    const std::vector< TestVector > testVectors{
+        {"http://%X@www.example.com/"},
+        {"http://{@www.example.com/"},
+        {"//[vX.:]/"},
+    }; 
+    size_t index = 0;
+    for(const auto& test: testVectors) {
+        Uri::Uri uri;
+        ASSERT_FALSE(uri.ParseFromString(test.uriString)) << index;
+        ++index;
+    }
+}
+
+TEST(UriTests, UriTests_ParseFromStringUriHostNameBarelyLegal_Test) {
+    struct TestVector {
+        std::string uriString;
+        std::string hostName;
+    };
+    const std::vector<TestVector> testVectors {
+        
+        {"//%41/", "A"},
+        {"///", ""},
+        {"//!/", "!"},
+        {"//'/", "'"},
+        {"//(/", "("},
+        {"//;/", ";"},
+        {"//1.2.3.4/","1.2.3.4"},
+        {"//[v7.:]/", "[v7.:]"},
+    };
+    size_t index = 0;
+    for(const auto& test: testVectors) {
+        Uri::Uri uri;
+        ASSERT_TRUE(uri.ParseFromString(test.uriString)) <<index;
+        ASSERT_EQ(test.hostName, uri.GetHost()) << index;
+        ++index;
+    }    
+}
+
+TEST(UriTests, UriTests_ParseFromStringUriWithInterpretColonOnAuthorirtyAsShemeDel_Test) {
+struct TestVector {
+        std::string uriString;
+    };
+    const std::vector<TestVector> testVectors {
+        {"http://foo:balbla@www.example.com/"},
+        {"//[v7.:]/"},
+    };
+    size_t index = 0;
+    for(const auto& test: testVectors) {
+        Uri::Uri uri;
+        ASSERT_TRUE(uri.ParseFromString(test.uriString)) <<index;
+        ++index;
+    }    
+}
