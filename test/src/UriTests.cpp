@@ -379,3 +379,56 @@ struct TestVector {
         ++index;
     }    
 }
+
+TEST(UriTests, ParseFromStringUriPathIllegalCharacters) {
+    const std::vector< std::string > testVectors{
+        {"http://www.example.com/library[book"},
+        {"http://www.example.com/]book"},
+        {"http://www.example.com/library]"},
+        {"http://www.example.com/["},
+        {"http://www.example.com/library/book]"},
+        {"http://www.example.com/library/["},
+        {"http://www.example.com/library]/book"},
+        {"http://www.example.com/[/book]"},
+        {"http://www.example.com/library]/"},
+        {"http://www.example.com/[/"},
+        {"/library[book"},
+        {"/]book"},
+        {"/library]"},
+        {"/["},
+        {"/library/book]"},
+        {"/library/["},
+        {"/library]/book"},
+        {"/[/book]"},
+        {"/library]/"},
+        {"/[/"},
+    };
+    size_t index = 0;
+    for(const auto& test: testVectors) {
+        Uri::Uri uri;
+        ASSERT_FALSE(uri.ParseFromString(test)) <<index;
+        ++index;
+    }
+}
+
+TEST(UriTests, ParseFromStringUriPathBarelyLegalCharacters) {
+    struct TestVector {
+        std::string uriString;
+        std::vector<std::string> path;
+    };
+
+    std::vector< TestVector > testVectors{
+        {"/:/book", {"", ":", "book"}},
+        {"hnab@/book", {"hnab@", "book"}},
+        {"hello!", {"hello!"}},
+        {"urn:hello,%20w%6Frld", {"hello, world"}},
+        {"//example.com/library/(book)/", {"", "library", "(book)", ""}},
+    };
+    size_t index = 0;
+    for (const auto& test: testVectors) {
+        Uri::Uri uri;
+        ASSERT_TRUE(uri.ParseFromString(test.uriString)) <<index;
+        ASSERT_EQ(test.path, uri.GetPath()) <<index;
+        ++index;
+    } 
+}
