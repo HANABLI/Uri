@@ -150,6 +150,70 @@ namespace Uri {
 
         // Methods
         /**
+         * This method checks and decode query or fragment elements of 
+         * a String Uri.
+         * 
+         * @param[in, out] queryOrFragment
+         *      On input, we have the Query or Fragment element to check and decode.
+         *      On output, we have the decoded Query or Fragment element
+         * @return
+         *      return an indication of whether or not the element 
+         *      passed all checks and was decoded
+        */
+        bool DecodeQueryOrFragment(std::string& queryOrFragment) {
+            const auto entryQueryOrFragment = std::move(queryOrFragment);
+            queryOrFragment.clear();
+            size_t decoderState = 0;
+            int decodedCharacter = 0;
+            for (const auto c: entryQueryOrFragment) {
+                switch (decoderState) {
+                    case 0: {
+                            if (c == '%') {
+                                decoderState = 1;
+                            } else {
+                                if (IsCharacterInSet(c, {'a', 'z', 'A', 'Z', '0', '9', 
+                                '-', '-', '.', '.', '_', '_', '~', '~', 
+                                '!', '!', '$', '$', '&', '&', '\'', '\'', '(', '(', ')', ')', 
+                                '*', '*', '+', '+', ',', ',', ';', ';', '=', '=',
+                                ':', ':', '@', '@', '/', '/', '?', '?'})) {
+                                    queryOrFragment.push_back(c);
+                                }
+                                else {
+                                    return false;
+                                }
+                            }
+                        } break;
+                        
+                    case 1: {
+                        decoderState = 2;
+                        decodedCharacter <<= 4;
+                        if (IsCharacterInSet(c, {'0', '9'})) {
+                            decodedCharacter += (int)(c - '0');
+                        } else if (IsCharacterInSet(c, {'A', 'F'})) {
+                            decodedCharacter += (int)(c - 'A') + 10;
+                        } else {
+                            return false;
+                        }
+                    } break;
+
+                    case 2: { // %[0-9A-F] ...
+                            decodedCharacter <<= 4;
+                            decoderState = 0;
+                        if (IsCharacterInSet(c, {'0', '9'})) {                         
+                            decodedCharacter += (int)(c - '0');                      
+                        } else if (IsCharacterInSet(c, {'A', 'F'})) {
+                            decodedCharacter += (int)(c - 'A') + 10;
+                        } else {
+                            return false;
+                        }
+                        queryOrFragment.push_back((char)decodedCharacter);
+                    } break;  
+                }
+            }
+            return true;
+        }
+
+        /**
          * This method checks and decode the path segment.
          * 
          * @param[in, out] segment
@@ -546,6 +610,9 @@ namespace Uri {
         } else {
             impl_->fragment = next.substr(fragmentDelimiter + 1);
         }
+        if(!impl_->DecodeQueryOrFragment(impl_->fragment)) {
+            return false;
+        }
         // query
         const auto queryDelimiter = next.find('?');
         if (queryDelimiter == std::string::npos) {
@@ -556,6 +623,9 @@ namespace Uri {
             } else {
                 impl_->query = next.substr(queryDelimiter + 1);
             }
+        }
+        if(!impl_->DecodeQueryOrFragment(impl_->query)) {
+            return false;
         }
         return true;
     }
