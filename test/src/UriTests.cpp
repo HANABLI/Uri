@@ -370,6 +370,7 @@ struct TestVector {
     const std::vector<TestVector> testVectors {
         {"http://foo:balbla@www.example.com/"},
         {"//[v7.:]/"},
+        {"/:/book"},
     };
     size_t index = 0;
     for(const auto& test: testVectors) {

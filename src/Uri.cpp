@@ -428,13 +428,13 @@ namespace Uri {
     bool Uri::ParseFromString(const std::string &uriString)
     {
 
-        auto authorityDelimiter = uriString.find("//");
-        if (authorityDelimiter == std::string::npos) {
-            authorityDelimiter = uriString.length();
+        auto authorityOrPathDelimiter = uriString.find('/');
+        if (authorityOrPathDelimiter == std::string::npos) {
+            authorityOrPathDelimiter = uriString.length();
         }
 
         // scheme parse
-        const auto schemeEnd = uriString.substr(0, authorityDelimiter).find(':');
+        const auto schemeEnd = uriString.substr(0, authorityOrPathDelimiter).find(':');
         std::string next;
         if (schemeEnd == std::string::npos) {
             impl_->scheme.clear();
