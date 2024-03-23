@@ -150,6 +150,70 @@ namespace Uri {
 
         // Methods
         /**
+         * This method checks and decode the path segment.
+         * 
+         * @param[in, out] segment
+         *      On input, this is the path segment to check and decode.
+         *      On output, this is the decoded path segment.
+         * @return
+         *      return an indication of whether or not the path segment
+         *      passed all checks and was decoded successfully.
+        */
+        bool DecodePathSegment(std::string& segment) {
+            const auto entrySegment = std::move(segment);
+            segment.clear();
+            size_t decoderState = 0;
+            int decodedCharacter = 0;
+            for (const auto c: entrySegment) {
+                switch (decoderState)
+                {
+                    case 0: {
+                        if (c == '%') {
+                            decoderState = 1;
+                        } else {
+                            if (IsCharacterInSet(c, {'a', 'z', 'A', 'Z', '0', '9', 
+                            '-', '-', '.', '.', '_', '_', '~', '~', 
+                            '!', '!', '$', '$', '&', '&', '\'', '\'', '(', '(', ')', ')', 
+                            '*', '*', '+', '+', ',', ',', ';', ';', '=', '=',
+                            ':', ':', '@', '@'})) {
+                                segment.push_back(c);
+                            }
+                            else {
+                                return false;
+                            }
+                        }
+                    } break;
+                    
+                    case 1: {
+                        decoderState = 2;
+                        decodedCharacter <<= 4;
+                        if (IsCharacterInSet(c, {'0', '9'})) {
+                            decodedCharacter += (int)(c - '0');
+                        } else if (IsCharacterInSet(c, {'A', 'F'})) {
+                            decodedCharacter += (int)(c - 'A') + 10;
+                        } else {
+                            return false;
+                        }
+                    } break;
+
+                    case 2: { // %[0-9A-F] ...
+                            decodedCharacter <<= 4;
+                            decoderState = 0;
+                        if (IsCharacterInSet(c, {'0', '9'})) {                         
+                            decodedCharacter += (int)(c - '0');                      
+                        } else if (IsCharacterInSet(c, {'A', 'F'})) {
+                            decodedCharacter += (int)(c - 'A') + 10;
+                        } else {
+                            return false;
+                        }
+                        segment.push_back((char)decodedCharacter);
+                    } break;  
+                }           
+            }
+            return true;
+        }
+
+        /**
          * This method builds the internal path element sequence
          * by parsing it from the given path string.
          * 
@@ -160,7 +224,7 @@ namespace Uri {
          *      An indication if the path was parsed correctly or not
          *      is returned.
         */
-        bool ParsePath(std::string pathString) {
+        bool ParsePath(std::string& pathString) {
             path.clear();
             if (pathString._Equal("/"))
             {
@@ -178,8 +242,16 @@ namespace Uri {
                         path.emplace_back(pathString.begin(), pathString.begin() + delimiter);
                         pathString = pathString.substr(delimiter + 1);
                     }           
+                }
+                if (!path.empty()) {
+                    for (auto& segment: path) {
+                        if(!DecodePathSegment(segment)) {
+                            return false;
+                        }
+                    }
                 }    
             }
+
             return true;
         }
 
@@ -461,19 +533,20 @@ namespace Uri {
             impl_->host.clear();
             impl_->hasPort = false;
         }
-
+        auto pathString = next.substr(0, next.find_first_of("?#"));
         // path parse
-        if(!impl_->ParsePath(next)) {
+        if(!impl_->ParsePath(pathString)) {
             return false;
         }
         
-
+        // fragment
         const auto fragmentDelimiter = next.find('#');
         if (fragmentDelimiter == std::string::npos) {
             impl_->fragment.clear();
         } else {
             impl_->fragment = next.substr(fragmentDelimiter + 1);
         }
+        // query
         const auto queryDelimiter = next.find('?');
         if (queryDelimiter == std::string::npos) {
             impl_->query.clear();
