@@ -432,3 +432,111 @@ TEST(UriTests, ParseFromStringUriPathBarelyLegalCharacters) {
         ++index;
     } 
 }
+
+TEST(UriTests, ParseFromStringUriQueryIllegalCharacters) {
+    const std::vector< std::string > testVectors{
+        {"http://www.example.com/?library[book"},
+        {"http://www.example.com/?]book"},
+        {"http://www.example.com/?library]"},
+        {"http://www.example.com/?["},
+        {"http://www.example.com/?library/book]"},
+        {"http://www.example.com/?library/["},
+        {"http://www.example.com/?library]/book"},
+        {"http://www.example.com/?[/book]"},
+        {"http://www.example.com/?library]/"},
+        {"http://www.example.com/?[/"},
+        {"?library[book"},
+        {"?]book"},
+        {"?library]"},
+        {"?["},
+        {"?library/book]"},
+        {"?library/["},
+        {"?library]/book"},
+        {"?[/book]"},
+        {"?library]/"},
+        {"?[/"},
+    };
+    size_t index = 0;
+    for(const auto& test: testVectors) {
+        Uri::Uri uri;
+        ASSERT_FALSE(uri.ParseFromString(test)) <<index;
+        ++index;
+    }
+}
+
+TEST(UriTests, ParseFromStringUriQueryBarelyLegalCharacters) {
+    struct TestVector {
+        std::string uriString;
+        std::string query;
+    };
+
+    std::vector< TestVector > testVectors{
+        {"/?:/book", ":/book"},
+        {"?hnab@/book", "hnab@/book"},
+        {"?hello!", "hello!"},
+        {"urn:?hello,%20w%6Frld", "hello, world"},
+        {"//example.com/library?(book)/", "(book)/"},
+        {"http://www.example.com/?library?book", "library?book"},
+    };
+    size_t index = 0;
+    for (const auto& test: testVectors) {
+        Uri::Uri uri;
+        ASSERT_TRUE(uri.ParseFromString(test.uriString)) <<index;
+        ASSERT_EQ(test.query, uri.GetQuery()) <<index;
+        ++index;
+    } 
+}
+
+TEST(UriTests, ParseFromStringUriFragmentIllegalCharacters) {
+    const std::vector< std::string > testVectors{
+        {"http://www.example.com/#library[book"},
+        {"http://www.example.com/#]book"},
+        {"http://www.example.com/#library]"},
+        {"http://www.example.com/#["},
+        {"http://www.example.com/#library/book]"},
+        {"http://www.example.com/#library/["},
+        {"http://www.example.com/#library]/book"},
+        {"http://www.example.com/#[/book]"},
+        {"http://www.example.com/#library]/"},
+        {"http://www.example.com/#[/"},
+        {"#library[book"},
+        {"#]book"},
+        {"#library]"},
+        {"#["},
+        {"#library/book]"},
+        {"#library/["},
+        {"#library]/book"},
+        {"#[/book]"},
+        {"#library]/"},
+        {"#[/"},
+    };
+    size_t index = 0;
+    for(const auto& test: testVectors) {
+        Uri::Uri uri;
+        ASSERT_FALSE(uri.ParseFromString(test)) <<index;
+        ++index;
+    }
+}
+
+TEST(UriTests, ParseFromStringUriFragmentBarelyLegalCharacters) {
+    struct TestVector {
+        std::string uriString;
+        std::string fragment;
+    };
+
+    std::vector< TestVector > testVectors{
+        {"/#:/book", ":/book"},
+        {"#hnab@/book", "hnab@/book"},
+        {"#hello!", "hello!"},
+        {"urn:#hello,%20w%6Frld", "hello, world"},
+        {"//example.com/library#(book)/", "(book)/"},
+        {"http://www.example.com/#library?book", "library?book"},
+    };
+    size_t index = 0;
+    for (const auto& test: testVectors) { 
+        Uri::Uri uri;
+        ASSERT_TRUE(uri.ParseFromString(test.uriString)) <<index;
+        ASSERT_EQ(test.fragment, uri.GetFragment()) <<index;
+        ++index;
+    } 
+}
