@@ -1,4 +1,10 @@
-
+/**
+ * @file PercentEncodedCharacterDecoder.cpp
+ * 
+ * This modeule containe the implementation of Uri::PercentEncodedCharacterDecoder class.
+ * 
+ * © 2024 by Hatem Nabli
+*/
 
 #include "PercentEncodedCharacterDecoder.hpp"
 

@@ -1,7 +1,7 @@
 /**
  * @file IsCharacterInSet.cpp
  * 
- * This module declare the Uri::IsCharacterInSet function.
+ * This module containe the implementation of the Uri::IsCharacterInSet function.
  * 
  * © 2024 by Hatem Nabli
 */
