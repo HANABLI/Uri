@@ -77,9 +77,10 @@ namespace {
         UNRESERVED, SUB_DELIMS,':'
     };
 
-    const auto HEXDEGIT = Uri::CharacterSet{
+    const auto HEXDIGIT = Uri::CharacterSet{
         Uri::CharacterSet('0', '9'),
-        Uri::CharacterSet('A', 'F')
+        Uri::CharacterSet('A', 'F'),
+        Uri::CharacterSet('a', 'f')
     };
 
     /**
@@ -503,7 +504,7 @@ namespace Uri {
                     case 5: { // IPvFuture: v 
                         if (c == '.') {
                             decoderState = 7;
-                        } else if (!IsCharacterInSet(c, HEXDEGIT)) {
+                        } else if (!IsCharacterInSet(c, HEXDIGIT)) {
                             return false;
                         }
                         encodedHostName.push_back(c);
