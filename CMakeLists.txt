@@ -8,10 +8,15 @@ set(this Uri)
 
 set(Headers 
     include/Uri/Uri.hpp
+    src/PercentEncodedCharacterDecoder.hpp
+    src/IsCharacterInSet.hpp
+    
 )
 
 set(Sources 
     src/Uri.cpp
+    src/PercentEncodedCharacterDecoder.cpp
+    src/IsCharacterInSet.cpp
 )
 
 add_library(${this} STATIC ${Sources} ${Headers})

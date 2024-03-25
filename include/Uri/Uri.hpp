@@ -1,3 +1,5 @@
+#ifndef URI_HPP
+#define URI_HPP
 /**
  * @file Uri.hpp
  * 
@@ -5,6 +7,9 @@
  * 
  * © 2024 by Hatem Nabli
 */
+
+
+
 #include <functional>
 #include <inttypes.h>
 #include <memory>
@@ -178,3 +183,5 @@ namespace Uri {
        std::unique_ptr<struct Impl> impl_;
    };
 }
+
+#endif /*URI_HPP*/

@@ -6,9 +6,82 @@
  * © 2024 by Hatem Nabli
 */
 
+#include "IsCharacterInSet.hpp"
+#include "PercentEncodedCharacterDecoder.hpp"
+
 #include <Uri/Uri.hpp>
 
 namespace {
+    //Singleton
+    /**
+     * This is the character set containing the alphabetic characters
+     * from the ASCII characters.
+    */
+    const auto ALPHA = Uri::CharacterSet{
+            Uri::CharacterSet('a', 'z'),
+            Uri::CharacterSet('A', 'Z') 
+        };
+    /**
+     * This is the character set containing the numerical characters
+     * from the ASCII set.
+    */
+    const auto DIGIT = Uri::CharacterSet('0', '9');
+
+
+    const auto HEX = Uri::CharacterSet('A', 'F');
+
+    /**
+     * This is the character st corresponds to the "unreserved" syntax
+     * specified in RFC 3986 
+    */
+   const auto UNRESERVED = Uri::CharacterSet{
+    ALPHA,
+    DIGIT,
+    '.', '-', '_', '~'
+   };
+
+    /**
+     * This is the character st corresponds to the "sub-delims" syntax
+     * specified in RFC 3986 
+    */
+   const auto SUB_DELIMS = Uri::CharacterSet{
+    '!', '$', '&', '\'', '(', ')', '*', '+', ',', ';', '='
+   };
+    /**
+     * This is the character st corresponds to the second part of the "scheme" syntax
+     * specified in RFC 3986 
+    */
+   const auto SCHEME_NOT_FIRST = Uri::CharacterSet{
+    ALPHA,
+    DIGIT,
+    '+', '-', '.'
+   };
+    /**
+     * This is the character st corresponds to the "pchar" syntax
+     * specified in RFC 3986 
+    */
+   const auto PCHAR_NOT_PCT_ENCODED = Uri::CharacterSet{
+    UNRESERVED, SUB_DELIMS, 
+    ':', '@'
+    };
+
+    const auto QUERY_OR_FRAGMENT_CHAR = Uri::CharacterSet{
+        PCHAR_NOT_PCT_ENCODED, '/', '?'
+    };
+
+    const auto USER_INFO_CHAR = Uri::CharacterSet{
+        UNRESERVED, SUB_DELIMS,':'};
+    
+
+    const auto IPV_LAST_PART_FUTURE = Uri::CharacterSet{
+        UNRESERVED, SUB_DELIMS,':'
+    };
+
+    const auto HEXDEGIT = Uri::CharacterSet{
+        Uri::CharacterSet('0', '9'),
+        Uri::CharacterSet('A', 'F')
+    };
+
     /**
      * This fuction parses the given string as an unsigned 16-bit
      * integer, detecting invalid characters, overflow, etc..
@@ -65,19 +138,6 @@ namespace {
     }
 
 
-    bool IsCharacterInSet(char c, std::initializer_list< char > characterSet) {
-        for(auto charSet = characterSet.begin();
-            charSet != characterSet.end();
-            ++charSet) {
-                const auto first = *charSet++;
-                const auto last = *charSet;
-            if ((c >= first) && (c <= last)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     /**
      * This function returns a strategy function that 
      * my be used with the FailsMatch function to test a scheme
@@ -96,9 +156,9 @@ namespace {
                 } else {
                     bool check;
                     if(*isFirstCharacter) {
-                        check = IsCharacterInSet(c, {'a', 'z', 'A', 'Z'});
+                        check = Uri::IsCharacterInSet(c, ALPHA);
                     } else {
-                        check = IsCharacterInSet(c, {'a', 'z', 'A', 'Z', '0', '9', '+', '+', '-', '-', '.', '.'});
+                        check = Uri::IsCharacterInSet(c, SCHEME_NOT_FIRST);
 
                     }
                     *isFirstCharacter = false;
@@ -165,17 +225,15 @@ namespace Uri {
             queryOrFragment.clear();
             size_t decoderState = 0;
             int decodedCharacter = 0;
+            PercentEncodedCharacterDecoder pDecoder;
             for (const auto c: entryQueryOrFragment) {
                 switch (decoderState) {
                     case 0: {
                             if (c == '%') {
+                                pDecoder = PercentEncodedCharacterDecoder();
                                 decoderState = 1;
                             } else {
-                                if (IsCharacterInSet(c, {'a', 'z', 'A', 'Z', '0', '9', 
-                                '-', '-', '.', '.', '_', '_', '~', '~', 
-                                '!', '!', '$', '$', '&', '&', '\'', '\'', '(', '(', ')', ')', 
-                                '*', '*', '+', '+', ',', ',', ';', ';', '=', '=',
-                                ':', ':', '@', '@', '/', '/', '?', '?'})) {
+                                if (IsCharacterInSet(c, QUERY_OR_FRAGMENT_CHAR)) {
                                     queryOrFragment.push_back(c);
                                 }
                                 else {
@@ -183,37 +241,21 @@ namespace Uri {
                                 }
                             }
                         } break;
-                        
                     case 1: {
-                        decoderState = 2;
-                        decodedCharacter <<= 4;
-                        if (IsCharacterInSet(c, {'0', '9'})) {
-                            decodedCharacter += (int)(c - '0');
-                        } else if (IsCharacterInSet(c, {'A', 'F'})) {
-                            decodedCharacter += (int)(c - 'A') + 10;
-                        } else {
+                        if (!pDecoder.NextEncodedCharacter(c)) {
                             return false;
                         }
-                    } break;
-
-                    case 2: { // %[0-9A-F] ...
-                            decodedCharacter <<= 4;
+                        if (pDecoder.Done()) {
                             decoderState = 0;
-                        if (IsCharacterInSet(c, {'0', '9'})) {                         
-                            decodedCharacter += (int)(c - '0');                      
-                        } else if (IsCharacterInSet(c, {'A', 'F'})) {
-                            decodedCharacter += (int)(c - 'A') + 10;
-                        } else {
-                            return false;
+                            queryOrFragment.push_back((char)pDecoder.GetDecodedCharacter());
                         }
-                        queryOrFragment.push_back((char)decodedCharacter);
-                    } break;  
+                    }  
                 }
             }
             return true;
         }
-
-        /**
+        
+        /**.
          * This method checks and decode the path segment.
          * 
          * @param[in, out] segment
@@ -228,18 +270,16 @@ namespace Uri {
             segment.clear();
             size_t decoderState = 0;
             int decodedCharacter = 0;
+            PercentEncodedCharacterDecoder pDecoder;
             for (const auto c: entrySegment) {
                 switch (decoderState)
                 {
                     case 0: {
                         if (c == '%') {
+                            pDecoder = PercentEncodedCharacterDecoder();
                             decoderState = 1;
                         } else {
-                            if (IsCharacterInSet(c, {'a', 'z', 'A', 'Z', '0', '9', 
-                            '-', '-', '.', '.', '_', '_', '~', '~', 
-                            '!', '!', '$', '$', '&', '&', '\'', '\'', '(', '(', ')', ')', 
-                            '*', '*', '+', '+', ',', ',', ';', ';', '=', '=',
-                            ':', ':', '@', '@'})) {
+                            if (IsCharacterInSet(c, PCHAR_NOT_PCT_ENCODED)) {
                                 segment.push_back(c);
                             }
                             else {
@@ -249,29 +289,14 @@ namespace Uri {
                     } break;
                     
                     case 1: {
-                        decoderState = 2;
-                        decodedCharacter <<= 4;
-                        if (IsCharacterInSet(c, {'0', '9'})) {
-                            decodedCharacter += (int)(c - '0');
-                        } else if (IsCharacterInSet(c, {'A', 'F'})) {
-                            decodedCharacter += (int)(c - 'A') + 10;
-                        } else {
+                        if (!pDecoder.NextEncodedCharacter(c)) {
                             return false;
                         }
-                    } break;
-
-                    case 2: { // %[0-9A-F] ...
-                            decodedCharacter <<= 4;
+                        if (pDecoder.Done()) {
                             decoderState = 0;
-                        if (IsCharacterInSet(c, {'0', '9'})) {                         
-                            decodedCharacter += (int)(c - '0');                      
-                        } else if (IsCharacterInSet(c, {'A', 'F'})) {
-                            decodedCharacter += (int)(c - 'A') + 10;
-                        } else {
-                            return false;
-                        }
-                        segment.push_back((char)decodedCharacter);
-                    } break;  
+                            segment.push_back((char)pDecoder.GetDecodedCharacter());
+                        };
+                    }break;  
                 }           
             }
             return true;
@@ -341,6 +366,7 @@ namespace Uri {
                 size_t decoderState = 0;
                 std::string userInfodecoded;
                 int decodedCharacter = 0;
+                PercentEncodedCharacterDecoder pDecoder;
                 //State Machine pattern
                 for (const auto c: uriUserInfo) {
                     switch (decoderState)
@@ -348,12 +374,9 @@ namespace Uri {
                         case 0: {
                             if (c == '%') {
                                 decoderState = 1;
+                                pDecoder = PercentEncodedCharacterDecoder();
                             } else {
-                                if (IsCharacterInSet(c, {'a', 'z', 'A', 'Z', '0', '9', 
-                                '-', '-', '.', '.', '_', '_', '~', '~', 
-                                '!', '!', '$', '$', '&', '&', '\'', '\'', '(', '(', ')', ')', 
-                                '*', '*', '+', '+', ',', ',', ';', ';', '=', '=',
-                                ':', ':'})) {
+                                if (IsCharacterInSet(c, USER_INFO_CHAR)) {
                                     userInfodecoded.push_back(c);
                                 }
                                 else {
@@ -363,28 +386,13 @@ namespace Uri {
                         } break;
                         
                         case 1: {
-                            decoderState = 2;
-                            decodedCharacter <<= 4;
-                            if (IsCharacterInSet(c, {'0', '9'})) {
-                                decodedCharacter += (int)(c - '0');
-                            } else if (IsCharacterInSet(c, {'A', 'F'})) {
-                                decodedCharacter += (int)(c - 'A') + 10;
-                            } else {
+                            if (!pDecoder.NextEncodedCharacter(c)) {
                                 return false;
                             }
-                        } break;
-
-                        case 2: { // %[0-9A-F] ...
-                                decodedCharacter <<= 4;
+                            if (pDecoder.Done()) {
                                 decoderState = 0;
-                            if (IsCharacterInSet(c, {'0', '9'})) {                         
-                                decodedCharacter += (int)(c - '0');                      
-                            } else if (IsCharacterInSet(c, {'A', 'F'})) {
-                                decodedCharacter += (int)(c - 'A') + 10;
-                            } else {
-                                return false;
+                                userInfodecoded.push_back((char)pDecoder.GetDecodedCharacter());
                             }
-                            userInfodecoded.push_back((char)decodedCharacter);
                         } break;
                     }
                 }
@@ -448,11 +456,7 @@ namespace Uri {
                         } else if (c == ':') {
                             decoderState = 9;
                         } else {
-                            if (IsCharacterInSet(c, {'a', 'z', 'A', 'Z', '0', '9', 
-                            '-', '-', '.', '.', '_', '_', '~', '~', 
-                            '!', '!', '$', '$', '&', '&', '\'', '\'', '(', '(', ')', ')', 
-                            '*', '*', '+', '+', ',', ',', ';', ';', '=', '=',
-                            ':', ':'})) {
+                            if (IsCharacterInSet(c, USER_INFO_CHAR)) {
                                 encodedHostName.push_back(c);
                             }
                             else {
@@ -464,9 +468,9 @@ namespace Uri {
                     case 2: {
                         decoderState = 3;
                         decodedCharacter <<= 4;
-                        if (IsCharacterInSet(c, {'0', '9'})) {
+                        if (IsCharacterInSet(c, DIGIT)) {
                             decodedCharacter += (int)(c - '0');
-                        } else if (IsCharacterInSet(c, {'A', 'F'})) {
+                        } else if (IsCharacterInSet(c, HEX)) {
                             decodedCharacter += (int)(c - 'A') + 10;
                         } else {
                             return false;
@@ -476,9 +480,9 @@ namespace Uri {
                     case 3: { // %[0-9A-F] ...
                         decodedCharacter <<= 4;
                         decoderState = 1;
-                        if (IsCharacterInSet(c, {'0', '9'})) {                         
+                        if (IsCharacterInSet(c, DIGIT)) {                         
                             decodedCharacter += (int)(c - '0');                      
-                        } else if (IsCharacterInSet(c, {'A', 'F'})) {
+                        } else if (IsCharacterInSet(c, HEX)) {
                             decodedCharacter += (int)(c - 'A') + 10;
                         } else {
                             return false;
@@ -499,7 +503,7 @@ namespace Uri {
                     case 5: { // IPvFuture: v 
                         if (c == '.') {
                             decoderState = 7;
-                        } else if (!IsCharacterInSet(c, { '0', '9', 'A', 'F' })) {
+                        } else if (!IsCharacterInSet(c, HEXDEGIT)) {
                             return false;
                         }
                         encodedHostName.push_back(c);
@@ -517,11 +521,7 @@ namespace Uri {
                             encodedHostName.push_back(c);
                             if(c == ']') {
                                 decoderState = 8;
-                            } else if (!IsCharacterInSet(c, {'a', 'z', 'A', 'Z', '0', '9', 
-                            '-', '-', '.', '.', '_', '_', '~', '~', 
-                            '!', '!', '$', '$', '&', '&', '\'', '\'', '(', '(', ')', ')', 
-                            '*', '*', '+', '+', ',', ',', ';', ';', '=', '=',
-                            ':', ':'})) {
+                            } else if (!IsCharacterInSet(c, IPV_LAST_PART_FUTURE)) {
                                 return false;
                             }
                     } break;
