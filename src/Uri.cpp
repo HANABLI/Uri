@@ -7,6 +7,7 @@
 */
 
 #include "IsCharacterInSet.hpp"
+#include "NormalizeCaseInsensitiveString.hpp"
 #include "PercentEncodedCharacterDecoder.hpp"
 
 #include <Uri/Uri.hpp>
@@ -438,6 +439,7 @@ namespace Uri {
             std::string encodedHostName;
             size_t decoderState = 0;
             int decodedCharacter = 0;
+            bool isRegChar = false;
             for (const auto c: hostName) {
                 switch (decoderState)
                 {
@@ -448,6 +450,7 @@ namespace Uri {
                             break;
                         } else {
                             decoderState = 1;
+                            isRegChar = true;
                         }             
                     } 
 
@@ -549,7 +552,12 @@ namespace Uri {
                 }
                 hasPort = true;
             }
-            host = encodedHostName;
+            if (isRegChar) {
+                host = NormalizeCaseInsensitiveString(encodedHostName);
+            } else {
+                host = encodedHostName;
+            }
+            
             authorityString = authorityString.substr(authorityEnd);
             return true;
         }
@@ -581,6 +589,7 @@ namespace Uri {
             if(FailsMatch(impl_->scheme, LegalSchemeStartegy())) {
                 return false;
             }
+            impl_->scheme = NormalizeCaseInsensitiveString(impl_->scheme);
             next = uriString.substr(schemeEnd + 1);
         }
         
