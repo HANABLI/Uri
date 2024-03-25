@@ -345,7 +345,7 @@ TEST(UriTests, UriTests_ParseFromStringUriHostNameBarelyLegal_Test) {
     };
     const std::vector<TestVector> testVectors {
         
-        {"//%41/", "A"},
+        {"//%41/", "a"},
         {"///", ""},
         {"//!/", "!"},
         {"//'/", "'"},
@@ -353,6 +353,7 @@ TEST(UriTests, UriTests_ParseFromStringUriHostNameBarelyLegal_Test) {
         {"//;/", ";"},
         {"//1.2.3.4/","1.2.3.4"},
         {"//[v7.:]/", "[v7.:]"},
+        {"//[v7.cD]/", "[v7.cD]"},
     };
     size_t index = 0;
     for(const auto& test: testVectors) {
@@ -539,4 +540,48 @@ TEST(UriTests, ParseFromStringUriFragmentBarelyLegalCharacters) {
         ASSERT_EQ(test.fragment, uri.GetFragment()) <<index;
         ++index;
     } 
+}
+
+TEST(UriTests, UriTests_ParseFromStringUriSchemeWhithMixedcases_Test) {
+     struct TestVector {
+        std::string uriString;
+    };
+    const std::vector<TestVector> testVectors {
+        
+        {"http://www.example.com/"},
+        {"hTtp://www.example.com/"},
+        {"Http://www.example.com/"},
+        {"HTTP://www.example.com/"},
+        {"HttP://www.example.com/"},
+        {"httP://www.example.com/"},
+    };
+    size_t index = 0;
+    for(const auto& test: testVectors) {
+        Uri::Uri uri;
+        ASSERT_TRUE(uri.ParseFromString(test.uriString)) <<index;
+        ASSERT_EQ("http", uri.GetScheme()) <<"-!---- Failed with test case : "<<index<<" ----!-";
+        ++index;
+    }    
+}
+
+TEST(UriTests, UriTests_ParseFromStringUriHostWhithMixedcases_Test) {
+     struct TestVector {
+        std::string uriString;
+    };
+    const std::vector<TestVector> testVectors {
+        
+        {"http://www.example.com/"},
+        {"hTtp://www.EXAMPLE.com/"},
+        {"Http://WWW.example.com/"},
+        {"HTTP://www.eXAmple.COM/"},
+        {"HttP://WWW.example.COM/"},
+        {"httP://wWw.eXample.Com/"},
+    };
+    size_t index = 0;
+    for(const auto& test: testVectors) {
+        Uri::Uri uri;
+        ASSERT_TRUE(uri.ParseFromString(test.uriString)) <<index;
+        ASSERT_EQ("www.example.com", uri.GetHost()) <<"-!---- Failed with test case : "<<index<<" ----!-";
+        ++index;
+    }    
 }
