@@ -10,13 +10,14 @@ set(Headers
     include/Uri/Uri.hpp
     src/PercentEncodedCharacterDecoder.hpp
     src/IsCharacterInSet.hpp
-    
+    src/NormalizeCaseInsensitiveString.hpp
 )
 
 set(Sources 
     src/Uri.cpp
     src/PercentEncodedCharacterDecoder.cpp
     src/IsCharacterInSet.cpp
+    src/NormalizeCaseInsensitiveString.cpp
 )
 
 add_library(${this} STATIC ${Sources} ${Headers})
