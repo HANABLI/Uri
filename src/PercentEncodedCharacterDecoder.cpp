@@ -22,18 +22,41 @@ namespace Uri{
 
     struct PercentEncodedCharacterDecoder::Impl
     {
-                
+        //Properties        
         /**
          * This is the decoded character
+         * 
          */
         char decodedCharacter ;
 
         /**
-         * this the corrent state of the decoder's state machine.
-         * 
+         * This is the needed number of digits to shift in.
          *
         */
-        size_t decoderState = 0;
+        size_t digitsLeft = 2;
+
+        //Methods
+        /**
+         * This method shifts in the hex character as part of building
+         * the decoded character.
+         * 
+         * @param[c] 
+         *      The hex digit param to shift into the decoded one
+         * @return
+         *      return an indication of whether or not the hex digit character is 
+         *      shifted. 
+        */
+        bool ShiftInHexDigit(char c) {
+            decodedCharacter <<= 4;
+            if (DIGIT.Contains(c)) {
+                decodedCharacter += (int)(c - '0');
+            } else if (HEX.Contains(c)) {
+                decodedCharacter += (int)(c - 'A') + 10;
+            } else {
+                return false;
+            }
+            return true;
+        }
     };
     
     PercentEncodedCharacterDecoder::~PercentEncodedCharacterDecoder() = default;
@@ -45,38 +68,14 @@ namespace Uri{
     }
 
     bool PercentEncodedCharacterDecoder::NextEncodedCharacter(char c) {
-        switch (impl_->decoderState)
-        {             
-            case 0: {
-                impl_->decoderState = 1;
-                impl_->decodedCharacter <<= 4;
-                if (DIGIT.Contains(c)) {
-                    impl_->decodedCharacter += (int)(c - '0');
-                } else if (HEX.Contains(c)) {
-                    impl_->decodedCharacter += (int)(c - 'A') + 10;
-                } else {
-                    return false;
-                }
-            } break;
-
-            case 1: { // %[0-9A-F] ...
-                    impl_->decodedCharacter <<= 4;
-                    impl_->decoderState = 2;
-                if (DIGIT.Contains(c)) {                         
-                    impl_->decodedCharacter += (int)(c - '0');                      
-                } else if (HEX.Contains(c)) {
-                    impl_->decodedCharacter += (int)(c - 'A') + 10;
-                } else {
-                    return false;
-                }
-            } break;  
-
-            default: break;
-        }  
+        if(!impl_->ShiftInHexDigit(c)) {
+            return false;
+        }
+        --impl_->digitsLeft;
         return true;         
-    };
+    }
 
-    bool PercentEncodedCharacterDecoder::Done() const {return impl_->decoderState == 2;}
+    bool PercentEncodedCharacterDecoder::Done() const {return impl_->digitsLeft == 0;}
 
     char PercentEncodedCharacterDecoder::GetDecodedCharacter() const {return (char)impl_->decodedCharacter;}
 }
