@@ -212,6 +212,47 @@ namespace Uri {
 
         // Methods
         /**
+         * This method checks and decodes the given URI element.
+         * 
+         * @param[in, out] element
+         *      On input, this is the uri element to check and decode.
+         *      On output, this is the decoded element.
+         * @return
+         *      return an indication of whether or not the element
+         *      passed all checks and was decoded successfully.
+        */
+        bool DecodeElement(std::string& element, const CharacterSet& charachterSetAllowed) {
+                const auto entryElement = std::move(element);
+                element.clear();
+                bool decodingPec = false;
+                PercentEncodedCharacterDecoder pDecoder;
+                for (const auto c: entryElement) {
+                    if(decodingPec) {
+                        if (!pDecoder.NextEncodedCharacter(c)) {
+                            return false;
+                        }
+                        if (pDecoder.Done()) {
+                            decodingPec = false;
+                            element.push_back((char)pDecoder.GetDecodedCharacter());
+                        }
+                    } else {
+                        if (c == '%') {
+                            decodingPec = true;
+                            pDecoder = PercentEncodedCharacterDecoder();
+                        } else {
+                            if (charachterSetAllowed.Contains(c)) {
+                                element.push_back(c);
+                            }
+                            else {
+                                return false;
+                            }
+                        }
+                    } 
+                }
+                return true;        
+            }
+
+        /**
          * This method checks and decode query or fragment elements of 
          * a String Uri.
          * 
@@ -223,39 +264,12 @@ namespace Uri {
          *      passed all checks and was decoded
         */
         bool DecodeQueryOrFragment(std::string& queryOrFragment) {
-            const auto entryQueryOrFragment = std::move(queryOrFragment);
-            queryOrFragment.clear();
-            size_t decoderState = 0;
-            int decodedCharacter = 0;
-            PercentEncodedCharacterDecoder pDecoder;
-            for (const auto c: entryQueryOrFragment) {
-                switch (decoderState) {
-                    case 0: {
-                            if (c == '%') {
-                                pDecoder = PercentEncodedCharacterDecoder();
-                                decoderState = 1;
-                            } else {
-                                if (QUERY_OR_FRAGMENT_CHAR.Contains(c)) {
-                                    queryOrFragment.push_back(c);
-                                }
-                                else {
-                                    return false;
-                                }
-                            }
-                        } break;
-                    case 1: {
-                        if (!pDecoder.NextEncodedCharacter(c)) {
-                            return false;
-                        }
-                        if (pDecoder.Done()) {
-                            decoderState = 0;
-                            queryOrFragment.push_back((char)pDecoder.GetDecodedCharacter());
-                        }
-                    }  
-                }
-            }
-            return true;
+           if (!DecodeElement(queryOrFragment, QUERY_OR_FRAGMENT_CHAR)) {
+                return false;
+           }
+           return true;
         }
+
         
         /**.
          * This method checks and decode the path segment.
@@ -268,38 +282,8 @@ namespace Uri {
          *      passed all checks and was decoded successfully.
         */
         bool DecodePathSegment(std::string& segment) {
-            const auto entrySegment = std::move(segment);
-            segment.clear();
-            size_t decoderState = 0;
-            int decodedCharacter = 0;
-            PercentEncodedCharacterDecoder pDecoder;
-            for (const auto c: entrySegment) {
-                switch (decoderState)
-                {
-                    case 0: {
-                        if (c == '%') {
-                            pDecoder = PercentEncodedCharacterDecoder();
-                            decoderState = 1;
-                        } else {
-                            if (PCHAR_NOT_PCT_ENCODED.Contains(c)) {
-                                segment.push_back(c);
-                            }
-                            else {
-                                return false;
-                            }
-                        }
-                    } break;
-                    
-                    case 1: {
-                        if (!pDecoder.NextEncodedCharacter(c)) {
-                            return false;
-                        }
-                        if (pDecoder.Done()) {
-                            decoderState = 0;
-                            segment.push_back((char)pDecoder.GetDecodedCharacter());
-                        };
-                    }break;  
-                }           
+            if (!DecodeElement(segment, PCHAR_NOT_PCT_ENCODED)) {
+                return false;
             }
             return true;
         }
@@ -422,20 +406,6 @@ namespace Uri {
             //const auto portDelimiter = authorityString.find(':');
             std::string hostName, portString;
             hostName = authorityString.substr(0, authorityEnd );
-            // if (portDelimiter == std::string::npos) {
-            //     hostName = authorityString.substr(0, authorityEnd );
-            //     hasPort = false;
-            // }
-            // else {
-            //     hostName = authorityString.substr(0, portDelimiter );
-            //     const auto portString = authorityString.substr(portDelimiter + 1, authorityEnd - portDelimiter - 1 );
-            //     if (
-            //         !ParseUint16(portString, port)
-            //     ) {
-            //         return false;
-            //     }
-            //     hasPort = true;
-            // }
             std::string encodedHostName;
             size_t decoderState = 0;
             int decodedCharacter = 0;
