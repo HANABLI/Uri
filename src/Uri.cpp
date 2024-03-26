@@ -531,6 +531,55 @@ namespace Uri {
             authorityString = authorityString.substr(authorityEnd);
             return true;
         }
+        /**
+         * This method parse fragment from uri string part 
+         * 
+         * @param[in, out] elements
+         *      The part of uri string containing fragment element
+         * @return
+         *      return an indication of whether or not the fragment was extracted
+         *      from the uri string part.
+        */
+        bool ParseFragment(std::string& elements) {
+            const auto fragmentDelimiter = elements.find('#');
+            if (fragmentDelimiter == std::string::npos) {
+                fragment.clear();
+            } else {
+                fragment = elements.substr(fragmentDelimiter + 1);
+            }
+            if(!DecodeQueryOrFragment(fragment)) {
+                return false;
+            }
+            return true;
+        }
+
+
+        /**
+         * This method parse query element from uri string part 
+         * 
+         * @param[in, out] elements
+         *      The part of uri string containing query element
+         * @return
+         *      return an indication of whether or not the query was extracted
+         *      from the uri string part.
+        */
+        bool ParseQuery(std::string& elements) {
+            const auto queryDelimiter = elements.find('?');
+            const auto fragmentDelimiter = elements.find('#');
+            if (queryDelimiter == std::string::npos) {
+                query.clear();
+            } else {
+                if (fragmentDelimiter != std::string::npos) {
+                    query = elements.substr(queryDelimiter + 1, fragmentDelimiter - queryDelimiter - 1 );
+                } else {
+                    query = elements.substr(queryDelimiter + 1);
+                }
+            }
+            if(!DecodeQueryOrFragment(query)) {
+                return false;
+            }
+            return true;
+        }
     };
     
     Uri::~Uri() = default;
@@ -584,27 +633,12 @@ namespace Uri {
         }
         
         // fragment
-        const auto fragmentDelimiter = next.find('#');
-        if (fragmentDelimiter == std::string::npos) {
-            impl_->fragment.clear();
-        } else {
-            impl_->fragment = next.substr(fragmentDelimiter + 1);
-        }
-        if(!impl_->DecodeQueryOrFragment(impl_->fragment)) {
+        if (!impl_->ParseFragment(next)) {
             return false;
         }
+
         // query
-        const auto queryDelimiter = next.find('?');
-        if (queryDelimiter == std::string::npos) {
-            impl_->query.clear();
-        } else {
-            if (fragmentDelimiter != std::string::npos) {
-                impl_->query = next.substr(queryDelimiter + 1, fragmentDelimiter - queryDelimiter - 1 );
-            } else {
-                impl_->query = next.substr(queryDelimiter + 1);
-            }
-        }
-        if(!impl_->DecodeQueryOrFragment(impl_->query)) {
+        if(!impl_->ParseQuery(next)) {
             return false;
         }
         return true;
