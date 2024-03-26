@@ -8,7 +8,7 @@
  * 
  * © 2024 by Hatem Nabli
 */
-#include "IsCharacterInSet.hpp"
+#include "CharacterSet.hpp"
 #include <stddef.h>
 #include <memory>
 

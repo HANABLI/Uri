@@ -1,11 +1,11 @@
 /**
- * @file IsCharacterInSet.cpp
+ * @file CharacteraSet.cpp
  * 
- * This module containe the implementation of the Uri::IsCharacterInSet function.
+ * This module containe the implementation of the Uri::CharacteraSet function.
  * 
  * © 2024 by Hatem Nabli
 */
-#include "IsCharacterInSet.hpp"
+#include "CharacterSet.hpp"
 #include <set>
 namespace Uri {
 
@@ -55,22 +55,18 @@ namespace Uri {
             );
         }
     }
-    bool CharacterSet::Contains(char c) const {
-        return impl_->charactersInSet.find(c) != impl_->charactersInSet.end();
-    }
-    /**
+        /**
      * This function indicate whether or not a given character
      * is in the given character set.
      *
      * @param[in] c
      *      The character to look for
-     * @param[in] characterSet
-     *      The charater set to look in
      * @return
      *      return an indication of whether or not the cahracter was find
      *      in the character set.
      */
-    bool IsCharacterInSet(char c, const CharacterSet& characterSet) {
-        return characterSet.Contains(c);
+    bool CharacterSet::Contains(char c) const {
+        return impl_->charactersInSet.find(c) != impl_->charactersInSet.end();
     }
+
 }

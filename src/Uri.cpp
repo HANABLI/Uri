@@ -6,7 +6,7 @@
  * © 2024 by Hatem Nabli
 */
 
-#include "IsCharacterInSet.hpp"
+#include "CharacterSet.hpp"
 #include "NormalizeCaseInsensitiveString.hpp"
 #include "PercentEncodedCharacterDecoder.hpp"
 
@@ -158,9 +158,9 @@ namespace {
                 } else {
                     bool check;
                     if(*isFirstCharacter) {
-                        check = Uri::IsCharacterInSet(c, ALPHA);
+                        check = ALPHA.Contains(c);
                     } else {
-                        check = Uri::IsCharacterInSet(c, SCHEME_NOT_FIRST);
+                        check = SCHEME_NOT_FIRST.Contains(c);
 
                     }
                     *isFirstCharacter = false;
@@ -235,7 +235,7 @@ namespace Uri {
                                 pDecoder = PercentEncodedCharacterDecoder();
                                 decoderState = 1;
                             } else {
-                                if (IsCharacterInSet(c, QUERY_OR_FRAGMENT_CHAR)) {
+                                if (QUERY_OR_FRAGMENT_CHAR.Contains(c)) {
                                     queryOrFragment.push_back(c);
                                 }
                                 else {
@@ -281,7 +281,7 @@ namespace Uri {
                             pDecoder = PercentEncodedCharacterDecoder();
                             decoderState = 1;
                         } else {
-                            if (IsCharacterInSet(c, PCHAR_NOT_PCT_ENCODED)) {
+                            if (PCHAR_NOT_PCT_ENCODED.Contains(c)) {
                                 segment.push_back(c);
                             }
                             else {
@@ -378,7 +378,7 @@ namespace Uri {
                                 decoderState = 1;
                                 pDecoder = PercentEncodedCharacterDecoder();
                             } else {
-                                if (IsCharacterInSet(c, USER_INFO_CHAR)) {
+                                if (USER_INFO_CHAR.Contains(c)) {
                                     userInfodecoded.push_back(c);
                                 }
                                 else {
@@ -460,7 +460,7 @@ namespace Uri {
                         } else if (c == ':') {
                             decoderState = 9;
                         } else {
-                            if (IsCharacterInSet(c, USER_INFO_CHAR)) {
+                            if (USER_INFO_CHAR.Contains(c)) {
                                 encodedHostName.push_back(c);
                             }
                             else {
@@ -472,9 +472,9 @@ namespace Uri {
                     case 2: {
                         decoderState = 3;
                         decodedCharacter <<= 4;
-                        if (IsCharacterInSet(c, DIGIT)) {
+                        if (DIGIT.Contains(c)) {
                             decodedCharacter += (int)(c - '0');
-                        } else if (IsCharacterInSet(c, HEX)) {
+                        } else if (HEX.Contains(c)) {
                             decodedCharacter += (int)(c - 'A') + 10;
                         } else {
                             return false;
@@ -484,9 +484,9 @@ namespace Uri {
                     case 3: { // %[0-9A-F] ...
                         decodedCharacter <<= 4;
                         decoderState = 1;
-                        if (IsCharacterInSet(c, DIGIT)) {                         
+                        if (DIGIT.Contains(c)) {                         
                             decodedCharacter += (int)(c - '0');                      
-                        } else if (IsCharacterInSet(c, HEX)) {
+                        } else if (HEX.Contains(c)) {
                             decodedCharacter += (int)(c - 'A') + 10;
                         } else {
                             return false;
@@ -507,7 +507,7 @@ namespace Uri {
                     case 5: { // IPvFuture: v 
                         if (c == '.') {
                             decoderState = 7;
-                        } else if (!IsCharacterInSet(c, HEXDIGIT)) {
+                        } else if (!HEXDIGIT.Contains(c)) {
                             return false;
                         }
                         encodedHostName.push_back(c);
@@ -525,7 +525,7 @@ namespace Uri {
                             encodedHostName.push_back(c);
                             if(c == ']') {
                                 decoderState = 8;
-                            } else if (!IsCharacterInSet(c, IPV_LAST_PART_FUTURE)) {
+                            } else if (!IPV_LAST_PART_FUTURE.Contains(c)) {
                                 return false;
                             }
                     } break;

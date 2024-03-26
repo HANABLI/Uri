@@ -9,14 +9,14 @@ set(this Uri)
 set(Headers 
     include/Uri/Uri.hpp
     src/PercentEncodedCharacterDecoder.hpp
-    src/IsCharacterInSet.hpp
+    src/CharacterSet.hpp
     src/NormalizeCaseInsensitiveString.hpp
 )
 
 set(Sources 
     src/Uri.cpp
     src/PercentEncodedCharacterDecoder.cpp
-    src/IsCharacterInSet.cpp
+    src/CharacterSet.cpp
     src/NormalizeCaseInsensitiveString.cpp
 )
 

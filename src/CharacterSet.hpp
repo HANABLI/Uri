@@ -2,9 +2,9 @@
 #define URI_IS_CHARACTER_IN_SET
 
 /**
- * @file IsCharacterInSet.hpp
+ * @file CharacterSet.hpp
  * 
- * This module declare the Uri::IsCharacterInSet class.
+ * This module declare the Uri::CharacteraSet class.
  * 
  * © 2024 by Hatem Nabli
 */
@@ -91,7 +91,6 @@ namespace Uri {
         
     };
 
-    bool IsCharacterInSet(char c, const CharacterSet& characterSet) ;
 }
 
 
