@@ -585,3 +585,31 @@ TEST(UriTests, UriTests_ParseFromStringUriHostWhithMixedcases_Test) {
         ++index;
     }    
 }
+
+TEST(UriTests, NormalizePath_Test) {
+    struct TestVector {
+        std::string uriString;
+        std::vector< std::string > normalizedPathSegments;
+    };
+    const std::vector<TestVector> TestVectors {
+        {"/a/b/c/./../../g", {"", "a", "g"}},
+        {"mid/content=5/../6", {"mid", "6"}},
+    };
+    size_t index = 0;
+    for (const auto& test: TestVectors) {
+        Uri::Uri uri;
+        ASSERT_TRUE(uri.ParseFromString(test.uriString)) << index;
+        uri.NormalizePath();
+        ASSERT_EQ(test.normalizedPathSegments, uri.GetPath()) << index;
+        ++index;
+    }
+}
+
+TEST(UriTests, NormalizeAndCompareEquivalentUris_Test) {
+    Uri::Uri uri1, uri2;
+    ASSERT_TRUE(uri1.ParseFromString("example://a/b/c/%7Bfoo%7D"));
+    ASSERT_TRUE(uri2.ParseFromString("eXAMPLE://a/./b/../b/%63/%7bfoo%7d"));
+    ASSERT_NE(uri1, uri2);
+    uri2.NormalizePath();
+    ASSERT_EQ(uri1, uri2);
+}
