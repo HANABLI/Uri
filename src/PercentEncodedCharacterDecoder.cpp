@@ -15,7 +15,10 @@ namespace {
     */
     const auto DIGIT = Uri::CharacterSet('0', '9');
 
-    const auto HEX = Uri::CharacterSet('A', 'F');
+    const auto HEX = Uri::CharacterSet{
+        Uri::CharacterSet('A', 'F'),
+        Uri::CharacterSet('a', 'f')
+    };
 }
 
 namespace Uri{
@@ -51,6 +54,7 @@ namespace Uri{
             if (DIGIT.Contains(c)) {
                 decodedCharacter += (int)(c - '0');
             } else if (HEX.Contains(c)) {
+                c = (char)towupper(c);
                 decodedCharacter += (int)(c - 'A') + 10;
             } else {
                 return false;
