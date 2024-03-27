@@ -594,6 +594,23 @@ TEST(UriTests, NormalizePath_Test) {
     const std::vector<TestVector> TestVectors {
         {"/a/b/c/./../../g", {"", "a", "g"}},
         {"mid/content=5/../6", {"mid", "6"}},
+        {"http://example.com/a/../b", {"", "b"}},
+        {"http://example.com/../b", {"", "b"}},
+        {"http://example.com/a/../../b", {"", "b"}},
+        {"./a/b", {"a", "b"}},
+        {"..", {}},
+        {"a/b/..", {"a"}},
+        {"a/b/.", {"a", "b"}},
+        {"a/b/./c", {"a", "b", "c"}},
+        {"a/b/./c/", {"a", "b", "c", ""}},
+        {"/a/b/..", {"", "a"}},
+        {"/a/b/.", {"", "a", "b"}},
+        {"/a/b/./c", {"", "a", "b", "c"}},
+        {"/a/b/./c/", {"", "a", "b", "c", ""}},
+        {"./a/b/..", {"a"}},
+        {"./a/b/.", {"a", "b"}},
+        {"./a/b/./c", {"a", "b", "c"}},
+        {"./a/b/./c/", {"a", "b", "c", ""}},
     };
     size_t index = 0;
     for (const auto& test: TestVectors) {
