@@ -728,7 +728,9 @@ namespace Uri {
                 oldPath.erase(oldPath.begin() + 1);
             } else if ((oldPath.size()>= 2) && (oldPath.at(0) == "") && (oldPath.at(1) == "..")) {
                 oldPath.erase(oldPath.begin() + 1);
-                impl_->path.pop_back();
+                if (!impl_->path.empty()) {
+                    impl_->path.pop_back();
+                }                
             } else if ((oldPath.size() == 1) && ((oldPath.at(0) == ".") || (oldPath.at(0) == ".."))) {
                 oldPath.erase(oldPath.begin());
             } else {           
