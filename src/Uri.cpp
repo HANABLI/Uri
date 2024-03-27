@@ -28,8 +28,10 @@ namespace {
     */
     const auto DIGIT = Uri::CharacterSet('0', '9');
 
-
-    const auto HEX = Uri::CharacterSet('A', 'F');
+    const auto HEX = Uri::CharacterSet{
+            Uri::CharacterSet('A', 'F'), 
+            Uri::CharacterSet('a', 'f')
+        };
 
     /**
      * This is the character st corresponds to the "unreserved" syntax
@@ -239,7 +241,8 @@ namespace Uri {
                         if (c == '%') {
                             decodingPec = true;
                             pDecoder = PercentEncodedCharacterDecoder();
-                        } else {
+                        }
+                        else {
                             if (charachterSetAllowed.Contains(c)) {
                                 element.push_back(c);
                             }
@@ -589,6 +592,24 @@ namespace Uri {
 
         }
 
+    bool Uri::operator==(const Uri& other) const {
+        return (
+            (impl_->scheme == other.GetScheme()) &&
+            (impl_->userInfo == other.GetUserInfo()) &&
+            (impl_->host == other.GetHost()) &&
+            ((!impl_->hasPort && !other.HasPort()) || 
+            (impl_->hasPort && other.HasPort()) && 
+            (impl_->port == other.GetPort())) &&
+            (impl_->query == other.GetQuery()) &&
+            (impl_->fragment == other.GetFragment()) &&
+            (impl_->path == other.GetPath())
+        );
+    }
+
+    bool Uri::operator!=(const Uri& other) const {
+        return !(*this == other);
+    }
+
     bool Uri::ParseFromString(const std::string &uriString)
     {
 
@@ -695,6 +716,38 @@ namespace Uri {
     UserInfo Uri::GetUserInfo() const
     {
         return impl_->userInfo;
+    }
+
+    void Uri::NormalizePath() {
+        auto oldPath = std::move(impl_->path);
+        impl_->path.clear();
+        while (!oldPath.empty()) {
+            if ((oldPath.at(0) == ".") || (oldPath.at(0) == "..")) {
+                oldPath.erase(oldPath.begin());
+            } else if ((oldPath.size()>= 2) && (oldPath.at(0) == "") && (oldPath.at(1) == ".")) {
+                oldPath.erase(oldPath.begin() + 1);
+            } else if ((oldPath.size()>= 2) && (oldPath.at(0) == "") && (oldPath.at(1) == "..")) {
+                oldPath.erase(oldPath.begin() + 1);
+                impl_->path.pop_back();
+            } else if ((oldPath.size() == 1) && ((oldPath.at(0) == ".") || (oldPath.at(0) == ".."))) {
+                oldPath.erase(oldPath.begin());
+            } else {           
+                if (oldPath.at(0) == "") {
+                    if (impl_->path.empty()) {
+                        impl_->path.push_back("");
+                    }
+                    oldPath.erase(oldPath.begin());
+                }
+                if (!oldPath.empty()) {
+                    impl_->path.push_back(oldPath.at(0));
+                    if (oldPath.size() > 1) {
+                        oldPath.at(0) = "";
+                    } else {
+                        oldPath.erase(oldPath.begin());
+                    }
+                }
+            } 
+        }
     }
 }
 

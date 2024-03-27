@@ -29,6 +29,12 @@ namespace Uri {
             name.clear();
             pass.clear();
         }
+        bool operator==(UserInfo& other) {
+            return (
+                (name == other.name) && 
+                (pass == other.pass)
+                );
+        }
     };      
 
     /**
@@ -53,6 +59,24 @@ namespace Uri {
         */
        Uri();
 
+        /**
+         * This is the equality comparison operator for the class
+         * 
+         * @param[in] otherUri
+         *      This is the other URI to which to compare this URI.
+         * @return
+         *      An indication of whether or not this URI is equal to the other one
+        */
+       bool operator==(const Uri& otherUri) const;
+        /**
+         * This is the inequality comparison operator for the class
+         * 
+         * @param[in] otherUri
+         *      This is the other URI to which to compare this URI.
+         * @return
+         *      An indication of whether or not this URI is equal to the other one
+        */
+       bool operator!=(const Uri& otherUri) const;
        /**
         * This method build the URI from the elements parsed
         * from the given string rendering of a URI
@@ -167,6 +191,13 @@ namespace Uri {
          *      return the user name and password structure
         */
        UserInfo GetUserInfo() const;
+
+        /**
+         * This method applies the "remove_dot_segment" routine according to 
+         * the RFC 3986 to the path segments of the URI, in order to normalize it.
+         * (apply and remove "." and ".." segments).
+        */
+       void NormalizePath(); 
 
        //private properties
     private:
