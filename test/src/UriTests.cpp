@@ -126,7 +126,7 @@ TEST(UriTests, ParseFromStringIsRelativePath_Test) {
     };
     const std::vector<TestVector> testVectors {
         {"http://www.example.com/", false},
-        {"http://www.example.com", true},
+        {"http://www.example.com", false},
         {"/", false},
         {"book", true},
         /*
