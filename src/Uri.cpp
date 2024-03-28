@@ -587,6 +587,8 @@ namespace Uri {
     
     Uri::~Uri() = default;
 
+    Uri::Uri(Uri&&) = default;
+    Uri& Uri::operator=(Uri&&) = default;
     Uri::Uri()
         : impl_(new Impl){
 

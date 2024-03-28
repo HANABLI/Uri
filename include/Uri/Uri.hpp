@@ -48,9 +48,9 @@ namespace Uri {
         ~Uri();
         Uri(const Uri&) = delete; // Copy Constructor that creates a new object by making a copy of an existing object. 
         //It ensures that a deep copy is performed if the object contains dynamically allocated resources 
-        Uri(Uri&&) = delete; // Move Constructor that transfers resources from an expiring object to a newly constructed object.
+        Uri(Uri&&); // Move Constructor that transfers resources from an expiring object to a newly constructed object.
         Uri& operator=(const Uri&) = delete; //Copy Assignment Operation That assigns the values of one object to another object using the assignment operator (=)
-        Uri& operator=(Uri&&) = delete; //Move Assignment Operator: Amove assignment operator efficiently transfers resources from one object to another.
+        Uri& operator=(Uri&&); //Move Assignment Operator: Amove assignment operator efficiently transfers resources from one object to another.
         
         //public methods
     public:
