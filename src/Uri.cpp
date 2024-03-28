@@ -652,7 +652,12 @@ namespace Uri {
         if(!impl_->ParsePath(pathString)) {
             return false;
         }
-        
+
+        //Handle special case of absolute URI with empty
+        //path -- treat the same as "/" path.
+        if (!impl_->scheme.empty() && impl_->path.empty()) {
+            impl_->path.push_back("");
+        }
         // fragment
         if (!impl_->ParseFragment(next)) {
             return false;

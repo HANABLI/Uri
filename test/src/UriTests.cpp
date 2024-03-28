@@ -126,7 +126,7 @@ TEST(UriTests, ParseFromStringIsRelativePath_Test) {
     };
     const std::vector<TestVector> testVectors {
         {"http://www.example.com/", false},
-        {"http://www.example.com", false},
+        {"http://www.example.com", true},
         {"/", false},
         {"book", true},
         /*
@@ -628,5 +628,13 @@ TEST(UriTests, NormalizeAndCompareEquivalentUris_Test) {
     ASSERT_TRUE(uri2.ParseFromString("eXAMPLE://a/./b/../b/%63/%7bfoo%7d"));
     ASSERT_NE(uri1, uri2);
     uri2.NormalizePath();
+    ASSERT_EQ(uri1, uri2);
+}TEST(UriTests, EmptyPathInUriWithAuthorityIsAquivalentToSlashOnlyPath) {
+    Uri::Uri uri1, uri2;
+    ASSERT_TRUE(uri1.ParseFromString("http://example.com"));
+    ASSERT_TRUE(uri2.ParseFromString("http://example.com"));
+    ASSERT_EQ(uri1, uri2);
+    ASSERT_TRUE(uri1.ParseFromString("urn:"));
+    ASSERT_TRUE(uri2.ParseFromString("urn:/"));
     ASSERT_EQ(uri1, uri2);
 }
