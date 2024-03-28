@@ -599,18 +599,31 @@ TEST(UriTests, NormalizePath_Test) {
         {"http://example.com/a/../../b", {"", "b"}},
         {"./a/b", {"a", "b"}},
         {"..", {}},
-        {"a/b/..", {"a"}},
-        {"a/b/.", {"a", "b"}},
+        {"a/b/..", {"a", ""}},
+        {"a/b/.", {"a", "b", ""}},
         {"a/b/./c", {"a", "b", "c"}},
         {"a/b/./c/", {"a", "b", "c", ""}},
-        {"/a/b/..", {"", "a"}},
-        {"/a/b/.", {"", "a", "b"}},
+        {"/a/b/..", {"", "a", ""}},
+        {"/a/b/.", {"", "a", "b", ""}},
         {"/a/b/./c", {"", "a", "b", "c"}},
         {"/a/b/./c/", {"", "a", "b", "c", ""}},
-        {"./a/b/..", {"a"}},
-        {"./a/b/.", {"a", "b"}},
+        {"./a/b/..", {"a", ""}},
+        {"./a/b/.", {"a", "b", ""}},
         {"./a/b/./c", {"a", "b", "c"}},
         {"./a/b/./c/", {"a", "b", "c", ""}},
+        {"../a/b/..", {"a", ""}},
+        {"../a/b/.", {"a", "b", ""}},
+        {"../a/b/./c", {"a", "b", "c"}},
+        {"../a/b/./c/", {"a", "b", "c", ""}},
+        {"../a/b/../c", {"a", "c"}},
+        {"../a/b/./../c/", {"a", "c", ""}},
+        {"../a/b/./../c", {"a", "c"}},
+        {"../a/b/./../c/", {"a", "c", ""}},
+        {"../a/b/.././c/", {"a", "c", ""}},
+        {"../a/b/.././c", {"a", "c"}},
+        {"../a/b/.././c/", {"a", "c", ""}},
+        {"/./c/d", {"", "c", "d"}},
+        {"/../c/d", {"", "c", "d"}},
     };
     size_t index = 0;
     for (const auto& test: TestVectors) {
@@ -669,6 +682,27 @@ TEST(UriTests, ReferenceResolution) {
     const std::vector< TestVector > testVectors {
         {"http://a/b/c/d;p?q", "g:h", "g:h"},
         {"http://a/b/c/d;p?q", "g", "http://a/b/c/g"},
+        {"http://a/b/c/d;p?q", "./g", "http://a/b/c/g"},
+        {"http://a/b/c/d;p?q", "g/", "http://a/b/c/g/"},
+        {"http://a/b/c/d;p?q", "/g", "http://a/g"},
+        {"http://a/b/c/d;p?q", "//g", "http://g"},
+        {"http://a/b/c/d;p?q", "?y" ,  "http://a/b/c/d;p?y"},
+        {"http://a/b/c/d;p?q", "g?y",  "http://a/b/c/g?y"},
+        {"http://a/b/c/d;p?q", "#s" ,  "http://a/b/c/d;p?q#s"},
+        {"http://a/b/c/d;p?q", "g#s",  "http://a/b/c/g#s"},
+        {"http://a/b/c/d;p?q", "g?y#s", "http://a/b/c/g?y#s"},
+        {"http://a/b/c/d;p?q", ";x" ,  "http://a/b/c/;x"},
+        {"http://a/b/c/d;p?q", "g;x",  "http://a/b/c/g;x"},
+        {"http://a/b/c/d;p?q", "g;x?y#s", "http://a/b/c/g;x?y#s"},
+        {"http://a/b/c/d;p?q", ""   ,  "http://a/b/c/d;p?q"},
+        {"http://a/b/c/d;p?q", "."  ,  "http://a/b/c/"},
+        {"http://a/b/c/d;p?q", "./" ,  "http://a/b/c/"},
+        {"http://a/b/c/d;p?q", ".." ,  "http://a/b/"},
+        {"http://a/b/c/d;p?q", "../",  "http://a/b/"},
+        {"http://a/b/c/d;p?q", "../g" , "http://a/b/g"},
+        {"http://a/b/c/d;p?q", "../..", "http://a/"},
+        {"http://a/b/c/d;p?q", "../../" , "http://a/"},
+        {"http://a/b/c/d;p?q", "../../g", "http://a/g"},
         {"http://example.com", "foo", "http://example.com/foo"},
     };
     size_t index = 0;
@@ -686,9 +720,9 @@ TEST(UriTests, ReferenceResolution) {
 TEST(UriTests, EmptyPathInUriWithAuthorityIsAquivalentToSlashOnlyPath) {
     Uri::Uri uri1, uri2;
     ASSERT_TRUE(uri1.ParseFromString("http://example.com"));
-    ASSERT_TRUE(uri2.ParseFromString("http://example.com"));
+    ASSERT_TRUE(uri2.ParseFromString("http://example.com/"));
     ASSERT_EQ(uri1, uri2);
-    ASSERT_TRUE(uri1.ParseFromString("urn:"));
-    ASSERT_TRUE(uri2.ParseFromString("urn:/"));
+    ASSERT_TRUE(uri1.ParseFromString("//example.com"));
+    ASSERT_TRUE(uri2.ParseFromString("//example.com/"));
     ASSERT_EQ(uri1, uri2);
 }
