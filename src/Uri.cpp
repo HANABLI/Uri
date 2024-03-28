@@ -170,6 +170,8 @@ namespace {
                 }            
             };
     }
+
+    
 }
 
 namespace Uri {
@@ -583,6 +585,40 @@ namespace Uri {
             }
             return true;
         }
+
+        
+    /**
+     * This method determines whether or not it makes sense to
+     * navigate one level up from the current path
+     * (in other words, does appending ".." to the path
+     * actually change the path?)
+     *
+     * @return
+     *     An indication of whether or not it makes sense to
+     *     navigate one level up from the current path is returned.
+     */
+    bool CanNavigatePathUpOneLevel() const {
+        return (
+            !IsPathAbsolute()
+            || (path.size() > 1)
+        );
+    }
+    /**
+     * This method returns an indication of whether or not the
+     * path of the URI is an absolute path, meaning it begins
+     * with a forward slash ('/') character.
+     *
+     * @return
+     *     An indication of whether or not the path of the URI
+     *     is an absolute path, meaning it begins
+     *     with a forward slash ('/') character is returned.
+     */
+    bool IsPathAbsolute() const {
+        return (
+            !path.empty()
+            && (path[0] == "")
+        );
+    }
     };
     
     Uri::~Uri() = default;
@@ -657,7 +693,7 @@ namespace Uri {
 
         //Handle special case of absolute URI with empty
         //path -- treat the same as "/" path.
-        if (!impl_->scheme.empty() && impl_->path.empty()) {
+        if (!impl_->host.empty() && impl_->path.empty()) {
             impl_->path.push_back("");
         }
         // fragment
@@ -726,36 +762,52 @@ namespace Uri {
     }
 
     void Uri::NormalizePath() {
+        // Rebuild the path one segment
+        // at a time, removing and applying special
+        // navigation segments ("." and "..") as we go.
         auto oldPath = std::move(impl_->path);
         impl_->path.clear();
-        while (!oldPath.empty()) {
-            if ((oldPath.at(0) == ".") || (oldPath.at(0) == "..")) {
-                oldPath.erase(oldPath.begin());
-            } else if ((oldPath.size()>= 2) && (oldPath.at(0) == "") && (oldPath.at(1) == ".")) {
-                oldPath.erase(oldPath.begin() + 1);
-            } else if ((oldPath.size()>= 2) && (oldPath.at(0) == "") && (oldPath.at(1) == "..")) {
-                oldPath.erase(oldPath.begin() + 1);
+        bool atDirectoryLevel = false;
+        for (const auto segment: oldPath) {
+            if (segment == ".") {
+                atDirectoryLevel = true;
+            } else if (segment == "..") {
+                // Remove last path element
+                // if we can navigate up a level.
                 if (!impl_->path.empty()) {
-                    impl_->path.pop_back();
-                }                
-            } else if ((oldPath.size() == 1) && ((oldPath.at(0) == ".") || (oldPath.at(0) == ".."))) {
-                oldPath.erase(oldPath.begin());
-            } else {           
-                if (oldPath.at(0) == "") {
-                    if (impl_->path.empty()) {
-                        impl_->path.push_back("");
-                    }
-                    oldPath.erase(oldPath.begin());
-                }
-                if (!oldPath.empty()) {
-                    impl_->path.push_back(oldPath.at(0));
-                    if (oldPath.size() > 1) {
-                        oldPath.at(0) = "";
-                    } else {
-                        oldPath.erase(oldPath.begin());
+                    if (impl_->CanNavigatePathUpOneLevel()) {
+                        impl_->path.pop_back();
                     }
                 }
-            } 
+                atDirectoryLevel = true;
+            } else {
+                // Non-relative elements can just
+                // transfer over fine.  An empty
+                // segment marks a transition to
+                // a directory level context.  If we're
+                // already in that context, we
+                // want to ignore the transition.
+                if (
+                    !atDirectoryLevel
+                    || !segment.empty()
+                ) {
+                    impl_->path.push_back(segment);
+                }
+                atDirectoryLevel = segment.empty();
+            }
+        }
+
+        // If at the end of rebuilding the path,
+        // we're in a directory level context,
+        // add an empty segment to mark the fact.
+        if (
+            atDirectoryLevel
+            && (
+                !impl_->path.empty()
+                && !impl_->path.back().empty()
+            )
+        ) {
+            impl_->path.push_back("");
         }
     }
     Uri Uri::Resolve(const Uri& relativeReference) const {
