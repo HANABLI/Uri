@@ -629,6 +629,33 @@ TEST(UriTests, NormalizeAndCompareEquivalentUris_Test) {
     ASSERT_NE(uri1, uri2);
     uri2.NormalizePath();
     ASSERT_EQ(uri1, uri2);
+}
+
+TEST(UriTests, ParseFromUriPathsWithPercentEncodedCharachter) {
+    struct TestVector {
+        std::string uriString;
+        std::string pathFirstSegment;
+    };
+    const std::vector<TestVector> testVectors {
+        {"%41", "A"},
+        {"%4A", "J"},
+        {"%4a", "J"},
+        {"%bc", "\xbc"},
+        {"%Bc", "\xbc"},
+        {"%bC", "\xbc"},
+        {"%BC", "\xbc"},
+        {"%41%42%43", "ABC"},
+        {"%41%4A%43%4b", "AJCK"}
+    };
+    size_t index = 0;
+    for (const auto& test: testVectors) {
+        Uri::Uri uri;
+        ASSERT_TRUE(uri.ParseFromString(test.uriString)) << index;
+        ASSERT_EQ(test.pathFirstSegment, uri.GetPath()[0]) << index;
+        ++index;
+    }
+    
+}
 
 TEST(UriTests, ReferenceResolution) {
     const std::string baseString("http://a/b/c/d;p?q");
