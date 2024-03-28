@@ -9,7 +9,8 @@
 */
 
 
-
+#include <algorithm>
+#include <iterator> 
 #include <functional>
 #include <inttypes.h>
 #include <memory>
@@ -199,6 +200,22 @@ namespace Uri {
         */
        void NormalizePath(); 
 
+        /**
+         * This methode resolves a given relative refrence, based on the given
+         * base URI, returning the resolved target URI.
+         * 
+         * @param[in] relativeReference
+         *      This describe how to get to the target starting at the base.
+         * 
+         * @return
+         *      The resolved target URI is returned.
+         * @note
+         *      It only makes sense to call this method on an absolute URI
+         *      (in which i mean the base URI should be absolute, as in 
+         *      IsRelativeReference() should return false).
+        */
+       Uri Resolve(const Uri& relativeReference) const;
+ 
        //private properties
     private:
         /**

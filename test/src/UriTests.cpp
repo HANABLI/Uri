@@ -126,7 +126,7 @@ TEST(UriTests, ParseFromStringIsRelativePath_Test) {
     };
     const std::vector<TestVector> testVectors {
         {"http://www.example.com/", false},
-        {"http://www.example.com", true},
+        {"http://www.example.com", false},
         {"/", false},
         {"book", true},
         /*
@@ -629,7 +629,34 @@ TEST(UriTests, NormalizeAndCompareEquivalentUris_Test) {
     ASSERT_NE(uri1, uri2);
     uri2.NormalizePath();
     ASSERT_EQ(uri1, uri2);
-}TEST(UriTests, EmptyPathInUriWithAuthorityIsAquivalentToSlashOnlyPath) {
+
+TEST(UriTests, ReferenceResolution) {
+    const std::string baseString("http://a/b/c/d;p?q");
+    Uri::Uri baseUri;
+    ASSERT_TRUE(baseUri.ParseFromString(baseString));
+    struct TestVector {
+        std::string baseUri;
+        std::string relativeReferenceString;
+        std::string target;
+    };
+    const std::vector< TestVector > testVectors {
+        {"http://a/b/c/d;p?q", "g:h", "g:h"},
+        {"http://a/b/c/d;p?q", "g", "http://a/b/c/g"},
+        {"http://example.com", "foo", "http://example.com/foo"},
+    };
+    size_t index = 0;
+    for (const auto& test: testVectors) {
+        Uri::Uri relativeReferenceUri, expectedTargetUri;
+        ASSERT_TRUE(baseUri.ParseFromString(test.baseUri));
+        ASSERT_TRUE(relativeReferenceUri.ParseFromString(test.relativeReferenceString)) << index;
+        ASSERT_TRUE(expectedTargetUri.ParseFromString(test.target)) << index;
+        const auto actualTargetUri = baseUri.Resolve(relativeReferenceUri);
+        ASSERT_EQ(expectedTargetUri, actualTargetUri) << index;
+        ++index;
+    }
+}
+
+TEST(UriTests, EmptyPathInUriWithAuthorityIsAquivalentToSlashOnlyPath) {
     Uri::Uri uri1, uri2;
     ASSERT_TRUE(uri1.ParseFromString("http://example.com"));
     ASSERT_TRUE(uri2.ParseFromString("http://example.com"));
