@@ -835,7 +835,7 @@ namespace Uri {
                 target.impl_->query = relativeReference.impl_->query;
             } else {
                 if(relativeReference.impl_->path.empty()) {
-                    target.impl_->path = relativeReference.impl_->path;
+                    target.impl_->path = impl_->path;
                     if(!relativeReference.impl_->query.empty()) {
                         target.impl_->query = relativeReference.impl_->query;
                     } else {
@@ -867,7 +867,7 @@ namespace Uri {
             }
             target.impl_->scheme = impl_->scheme;
         }
-        target.impl_->fragment = impl_->fragment;
+        target.impl_->fragment = relativeReference.impl_->fragment;
         return target;
     }
 }
