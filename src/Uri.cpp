@@ -140,7 +140,207 @@ namespace {
             }
             return !stillOkStrategy(' ', true);
     }
+    /**
+     * This function checks to make sur that the given string
+     * is a valid rendering of an octet as a decimal number.
+     * 
+     * @param[in] octetString
+     *      This is the octet string to validate.
+     * 
+     * @return
+     *      An indication of whether or not the given string
+     *      is a valid rendation ofa na octet as a decimal
+     *      number is returned
+    */
+    bool ValidateOctet(const std::string& octetString) {
+        int octet = 0;
+        for (auto c: octetString) {
+            if (DIGIT.Contains(c)) {
+                octet *= 10;
+                octet += (int)(c - '0');
+            } else {
+                return false;
+            }
+        }
+        return (octet <= 255);
+    }
+    /**
+     * This function checks to make sure that the address
+     * is a valid IPv4 address according to RFC 3986
+     * 
+     * @param[in] address
+     *      This is an IPv4Address to validate
+     * @return
+     *      return an indication of whether or not the address 
+     *      is a valid IPv4 address. 
+    */
+    bool ValidateIPv4Address(const std::string& address) {
+        size_t numGroups = 0;
+        size_t state = 0;
+        std::string octetBuffer;
+        for (auto c: address) {
+            switch (state) {
+                case 0: { //not in a group yet
+                    if (DIGIT.Contains(c)) {
+                        octetBuffer.push_back(c);
+                        state = 1;
+                    }  else {
+                        return false;
+                    }
+                } break;
 
+                case 1: { // expect a digit or dot
+                    if (c == '.') {
+                        if (numGroups++ >= 4) {
+                            return false;
+                        }
+                        if (!ValidateOctet(octetBuffer)) {
+                            return false;
+                        }
+                        octetBuffer.clear();
+                        state = 0;
+                    } else if (DIGIT.Contains(c)) {
+                        octetBuffer.push_back(c);
+                    } else {
+                        return false;
+                    }
+                } break;
+            }
+        }
+        if (!octetBuffer.empty()) {
+            ++numGroups;
+            if (!ValidateOctet(octetBuffer)) {
+                return false;
+            }
+        }
+        return (numGroups == 4);
+    }
+    /**
+     * This function checks to make sure that the address
+     * is a valid IPv6 address according to RFC 3986
+     * 
+     * @param[in] address
+     *      This is an IPv6Address to validate
+     * @return
+     *      return an indication of whether or not the address 
+     *      is a valid IPv6 address. 
+    */
+    bool ValidateIPv6Address(const std::string& address) {
+        size_t numGroups = 0;
+        bool doubleColonEncountered = false;
+        size_t numDigits = 0;
+        size_t state = 0;
+        std::string octetBuffuer;
+        size_t potentialIPv4AddressStart = 0;
+        size_t position = 0;
+        bool ipv4AddressEncountered = false;
+        for (auto c: address) {
+            switch (state)
+            {
+                case 0: { //not in a group yet
+                    if (c == ':') {
+                        state = 1;
+                    } else if (DIGIT.Contains(c)) {
+                        potentialIPv4AddressStart = position;
+                        ++numDigits = 1;
+                        state = 4;
+                    } else if (HEXDIGIT.Contains(c)) {
+                        ++ numDigits = 1;
+                        state = 3;
+                    } else {
+                        return false;
+                    }
+                } break;
+
+                case 1: { // not in a group yet, encountered one colon
+                    if (c == ':') {
+                        if(doubleColonEncountered) {
+                            return false;
+                        } else {
+                            doubleColonEncountered = true;
+                            state = 2;
+                        }   
+                    } else {
+                        return false;
+                    }
+                } break;
+                
+                case 2: { //expect a hex digit
+                    if (DIGIT.Contains(c)) {
+                        potentialIPv4AddressStart = position;
+                        if (++numDigits > 4) {
+                            return false;
+                        }
+                        state = 4;
+                    } else if (HEXDIGIT.Contains(c)) {
+                        if (++numDigits > 4) {
+                            return false;
+                        } 
+                        state = 3;
+                    } else {
+                        return false;
+                    }
+                } break;
+
+                case 3: { //expect either a hex digit or colon
+                    if (c == ':') {
+                        numDigits = 0;
+                        ++numGroups;
+                        state = 2;
+                    } else if (HEXDIGIT.Contains(c)) {
+                        if (++numDigits > 4) {
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
+                } break;
+
+                case 4: { //expect either a hex digit, dot, or colon
+                    if (c == ':') {
+                        numDigits = 0;
+                        ++numGroups;
+                    } else if (c == '.') {
+                        ipv4AddressEncountered = true;
+                        break;
+                    } else if (DIGIT.Contains(c)) {
+                        if (++numDigits > 4) {
+                            return false;
+                        }
+                    } else if (HEXDIGIT.Contains(c)) {
+                        if (++numDigits > 4) {
+                            return false;
+                        }
+                        state = 3;
+                    } else {
+                        return false;
+                    }
+                } break;
+            }
+            if (ipv4AddressEncountered) {
+                break;
+            }
+            ++position;
+        }
+        if (state == 4) {
+            ++numGroups;
+        }
+        if ((state == 1) && position == address.length()) { // trailing single colon
+            return false;
+        } if (ipv4AddressEncountered) {
+            if (!ValidateIPv4Address(address.substr(potentialIPv4AddressStart))) {
+                return false;
+            }
+            numGroups += 2;
+        } if (doubleColonEncountered) {
+            // A double clon matches one or more groups 
+            return (numGroups <= 7);
+        } else {
+            return (numGroups == 8);
+        }
+        
+        return true;
+    }
 
     /**
      * This function returns a strategy function that 
@@ -413,6 +613,7 @@ namespace Uri {
             hostName = authorityString.substr(0, authorityEnd );
             std::string encodedHostName;
             size_t decoderState = 0;
+            PercentEncodedCharacterDecoder pDecoder;
             int decodedCharacter = 0;
             bool isRegChar = false;
             for (const auto c: hostName) {
@@ -420,8 +621,7 @@ namespace Uri {
                 {
                     case 0: { // first character
                         if (c == '[') {
-                            decoderState = 4;
-                            encodedHostName.push_back(c);
+                            decoderState = 4;                    
                             break;
                         } else {
                             decoderState = 1;
@@ -431,6 +631,7 @@ namespace Uri {
 
                     case 1: { //reg-name or IPv4Address
                         if (c == '%') {
+                            pDecoder = PercentEncodedCharacterDecoder();
                             decoderState = 2;
                         } else if (c == ':') {
                             decoderState = 9;
@@ -445,41 +646,40 @@ namespace Uri {
                     } break;
                     
                     case 2: {
-                        decoderState = 3;
-                        decodedCharacter <<= 4;
-                        if (DIGIT.Contains(c)) {
-                            decodedCharacter += (int)(c - '0');
-                        } else if (HEX.Contains(c)) {
-                            decodedCharacter += (int)(c - 'A') + 10;
-                        } else {
+                        if(!pDecoder.NextEncodedCharacter(c)) {
                             return false;
                         }
+                        if (pDecoder.Done()) {
+                            decoderState = 1;
+                            encodedHostName.push_back((char)pDecoder.GetDecodedCharacter());
+                        }           
                     } break;
 
-                    case 3: { // %[0-9A-F] ...
-                        decodedCharacter <<= 4;
-                        decoderState = 1;
-                        if (DIGIT.Contains(c)) {                         
-                            decodedCharacter += (int)(c - '0');                      
-                        } else if (HEX.Contains(c)) {
-                            decodedCharacter += (int)(c - 'A') + 10;
-                        } else {
-                            return false;
-                        }
-                        encodedHostName.push_back((char)decodedCharacter);
-                    } break;
 
                     case 4: { // IP-literal
                         if (c == 'v') {
-                            decoderState = 5;
+                            decoderState = 6;
                             encodedHostName.push_back(c);           
                             break;
                         } else {
-                            decoderState = 6;
+                            decoderState = 5;
                         }
-                    } 
+                    }
 
-                    case 5: { // IPvFuture: v 
+                    case 5: { // IPv6Address
+                        // TODO: Later
+                        
+                        if (c == ']') {
+                            if(!ValidateIPv6Address(encodedHostName)) {
+                                return false;
+                            }
+                            decoderState = 8;
+                        } else {
+                            encodedHostName.push_back(c);
+                        }
+                    } break;
+
+                    case 6: { // IPvFuture: v 
                         if (c == '.') {
                             decoderState = 7;
                         } else if (!HEXDIGIT.Contains(c)) {
@@ -488,20 +688,14 @@ namespace Uri {
                         encodedHostName.push_back(c);
                     } break;
 
-                    case 6: { // IPv6Address
-                        // TODO: Later
-                        encodedHostName.push_back(c);
-                        if (c == ']') {
-                            decoderState = 8;
-                        }
-                    } break;
-
                     case 7: { // IPvFuture v 1*HEXDIG
-                            encodedHostName.push_back(c);
+                            
                             if(c == ']') {
                                 decoderState = 8;
                             } else if (!IPV_LAST_PART_FUTURE.Contains(c)) {
                                 return false;
+                            } else {
+                                encodedHostName.push_back(c);
                             }
                     } break;
 
@@ -518,6 +712,12 @@ namespace Uri {
                         portString.push_back(c);
                     } break;
                 }
+            }
+            if ((decoderState != 0) 
+            &&(decoderState != 1) 
+            && (decoderState != 8) 
+            && (decoderState != 9) ) {
+                return false;
             }
             if (portString.empty()) {
                 hasPort = false;
