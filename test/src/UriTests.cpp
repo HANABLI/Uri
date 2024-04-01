@@ -766,3 +766,51 @@ TEST(UriTests, IPv6Address) {
         ++index;
     }
 }
+
+TEST(UriTests, GenerateStringFromUriElements_Test) {
+    struct TestVector {
+        std::string stringScheme;
+        struct UserInfo
+        {
+            std::string name;
+            std::string pass;
+        } userInfo; 
+        std::string stringhost;
+        bool hasPort;
+        uint16_t port;
+        std::vector<std::string> path;
+        std::string query;
+        std::string fragment;
+        std::string expectedUriString;
+    };
+    const std::vector< TestVector > testVectors {
+        {"http",     {"", ""}, "www.example.com",   true,   8080,   {"", "path1", "path2"}, "library",    "book", "http://www.example.com:8080/path1/path2?library#book"},
+        {"",         {"", ""}, "example.com",       false,  0,      {}, "book",       "",  "//example.com?book"},
+        {"",         {"", ""}, "example.com",       true,   8080,   {""}, "",           "", "//example.com:8080/"},
+        {"",         {"", ""}, "",                  false,   0,     {}, "bar",        "", "?bar"},
+        {"http",     {"", ""}, "",                  false,   0,     {}, "bar",        "", "http:?bar"},
+        {"http",     {"", ""}, "",                  false,   0,     {}, "",           "", "http:"},
+        {"http",     {"", ""}, "::1",               false,   0,     {}, "",           "", "http://[::1]"},
+        {"http",     {"", ""}, "::1.2.3.4",         false,   0,     {}, "",           "", "http://[::1.2.3.4]"},
+        {"http",     {"", ""}, "1.2.3.4",           false,   0,     {}, "",           "", "http://1.2.3.4"},
+        {"",         {"", ""}, "",                  false,   0,     {}, "",           "", ""},
+        {"",         {"", ""}, "",                  false,   0,     {"", "abc", ""}, "",           "", "/abc/"},
+    };
+    size_t index = 0;
+    for (const auto& test: testVectors) {
+        Uri::Uri uri;
+        uri.SetScheme(test.stringScheme);
+        uri.SetUserName(test.userInfo.name);
+        uri.SetUserPass(test.userInfo.pass);
+        uri.SetHost(test.stringhost);
+        uri.SetPort(test.port);
+        uri.SetPath(test.path);
+        uri.SetQuery(test.query);
+        uri.SetFragment(test.fragment);
+        const auto actualUriString = uri.GenerateString();
+        ASSERT_EQ(test.expectedUriString, actualUriString) << index;
+        ASSERT_EQ(test.hasPort, uri.HasPort());
+        ++index;
+    }
+
+}
