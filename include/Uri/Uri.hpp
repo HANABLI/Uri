@@ -13,6 +13,7 @@
 #include <iterator> 
 #include <functional>
 #include <inttypes.h>
+#include <sstream>
 #include <memory>
 #include <stdio.h>
 #include <string>
@@ -216,6 +217,15 @@ namespace Uri {
         */
        Uri Resolve(const Uri& relativeReference) const;
  
+        void SetScheme(const std::string& scheme);
+        void SetUserName(const std::string& user);
+        void SetUserPass(const std::string& pass);
+        void SetHost(const std::string& host);
+        void SetPort(uint16_t port);
+        void SetQuery(const std::string& query);
+        void SetFragment(const std::string& fragment);
+        void SetPath(const std::vector<std::string>& path);
+        std::string GenerateString() const;
        //private properties
     private:
         /**

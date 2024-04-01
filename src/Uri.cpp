@@ -907,6 +907,85 @@ namespace Uri {
         }
         return true;
     }
+    void Uri::SetScheme(const std::string& scheme) {
+        impl_->scheme = scheme;
+    }
+
+    void Uri::SetUserName(const std::string& name) {
+        impl_->userInfo.name = name;
+    }
+
+    void Uri::SetUserPass(const std::string& pass) {
+        impl_->userInfo.pass = pass;
+    }
+
+    void Uri::SetHost(const std::string& host) {
+        impl_->host = host;
+    }
+
+    void Uri::SetPort(uint16_t port) {
+        impl_->port = port;
+    }
+
+    void Uri::SetQuery(const std::string& query) {
+        impl_->query = query;
+    }
+
+    void Uri::SetFragment(const std::string& fragment) {
+        impl_->fragment = fragment;    
+    }
+
+    void Uri::SetPath(const std::vector<std::string>& path) {
+        for(auto& segment: path) {
+            impl_->path.push_back(segment);
+        }
+    }
+
+    std::string Uri::GenerateString() const {
+        std::ostringstream buffer;
+        if (!impl_->scheme.empty()) {
+            buffer << impl_->scheme << ':';
+        }
+        if (!impl_->host.empty()) {
+            buffer << "//";
+            if(!impl_->userInfo.name.empty()) {
+                buffer << impl_->userInfo.name;
+                if(!impl_->userInfo.pass.empty()) {
+                    buffer << ':' << impl_->userInfo.pass;
+                }
+                buffer << '@';
+            }
+            if (ValidateIPv6Address(impl_->host)) {
+                buffer << '[' << impl_->host << ']';
+            } else {
+                buffer << impl_->host;
+            }
+            if (impl_->port > 0) {
+                impl_->hasPort = true;
+                buffer << ':' << impl_->port;
+            }            
+        }
+        if (impl_->IsPathAbsolute() && (impl_->path.size() == 1)) {
+            buffer << '/';
+        }
+        size_t i = 0;
+        for(const auto& segment: impl_->path) {
+            buffer << segment;
+            if (i + 1 < impl_->path.size()) {
+                buffer << '/';
+            }
+            ++i;
+        }
+        
+        if (!impl_->query.empty()) {
+            buffer << '?' << impl_->query;
+        }
+        if (!impl_->fragment.empty()) {
+            buffer << '#' << impl_->fragment;
+        }
+        
+        return buffer.str();
+    }
 
     std::string Uri::GetScheme() const
     {
