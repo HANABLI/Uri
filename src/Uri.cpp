@@ -74,7 +74,15 @@ namespace {
 
     const auto USER_INFO_CHAR = Uri::CharacterSet{
         UNRESERVED, SUB_DELIMS,':'};
-    
+    /**
+     * This is the character set corresponds to the "reg-name" syntax
+     * specified in RFC 3986 (https://tools.ietf.org/html/rfc3986),
+     * leaving out "pct-encoded".
+     */
+    const auto REG_NAME_NOT_PCT_ENCODED = Uri::CharacterSet{
+        UNRESERVED,
+        SUB_DELIMS
+    };
 
     const auto IPV_LAST_PART_FUTURE = Uri::CharacterSet{
         UNRESERVED, SUB_DELIMS,':'
@@ -438,41 +446,87 @@ namespace Uri {
          * @param[in, out] element
          *      On input, this is the uri element to check and decode.
          *      On output, this is the decoded element.
+         * @param[in] allowedCharacters
+         *      This is the set of characters tha do not need to 
+         *      be percent-encoded.
          * @return
          *      return an indication of whether or not the element
          *      passed all checks and was decoded successfully.
         */
         bool DecodeElement(std::string& element, const CharacterSet& charachterSetAllowed) {
-                const auto entryElement = std::move(element);
-                element.clear();
-                bool decodingPec = false;
-                PercentEncodedCharacterDecoder pDecoder;
-                for (const auto c: entryElement) {
-                    if(decodingPec) {
-                        if (!pDecoder.NextEncodedCharacter(c)) {
-                            return false;
-                        }
-                        if (pDecoder.Done()) {
-                            decodingPec = false;
-                            element.push_back((char)pDecoder.GetDecodedCharacter());
-                        }
-                    } else {
-                        if (c == '%') {
-                            decodingPec = true;
-                            pDecoder = PercentEncodedCharacterDecoder();
+            const auto entryElement = std::move(element);
+            element.clear();
+            bool decodingPec = false;
+            PercentEncodedCharacterDecoder pDecoder;
+            for (const auto c: entryElement) {
+                if(decodingPec) {
+                    if (!pDecoder.NextEncodedCharacter(c)) {
+                        return false;
+                    }
+                    if (pDecoder.Done()) {
+                        decodingPec = false;
+                        element.push_back((char)pDecoder.GetDecodedCharacter());
+                    }
+                } else {
+                    if (c == '%') {
+                        decodingPec = true;
+                        pDecoder = PercentEncodedCharacterDecoder();
+                    }
+                    else {
+                        if (charachterSetAllowed.Contains(c)) {
+                            element.push_back(c);
                         }
                         else {
-                            if (charachterSetAllowed.Contains(c)) {
-                                element.push_back(c);
-                            }
-                            else {
-                                return false;
-                            }
+                            return false;
                         }
-                    } 
-                }
-                return true;        
+                    }
+                } 
             }
+            return true;        
+        }
+        /**
+         * This fucntion returns the hex digit that corresponds
+         * to the given value.
+         * 
+         * @param[in] value
+         *      This is the value to convert to a hex digit.
+         * @return 
+         *      The hex digit corresponding to the given value is returned.
+        */
+        char MakeHexDigit(int value) {
+            if (value < 10) {
+                return (char)(value + '0');
+            } else {
+                return (char)(value - 10 + 'A');
+            }
+        }
+        /**
+         * This method encodes the given URI element.
+         * 
+         * @param[in] element
+         *      On input, this is the element to encode.
+         * @param[in] allowedCharacters
+         *      This is the set of characters tha do not need to 
+         *      be decoded
+         * @return
+         *      return the encoded element.
+        */
+        std::string EncodeElement( 
+            const std::string& element, 
+            const CharacterSet& allowedCharacters 
+        ) {
+            std::string encodedElement;
+            for (auto c: element) {
+                if (allowedCharacters.Contains(c)) {
+                    encodedElement.push_back(c);
+                } else {
+                    encodedElement.push_back('%');
+                    encodedElement.push_back(MakeHexDigit((unsigned int)c >> 4));
+                    encodedElement.push_back(MakeHexDigit((unsigned int)c & 0x0F));
+                }
+            }
+            return encodedElement;
+        }
 
         /**
          * This method checks and decode query or fragment elements of 
@@ -982,7 +1036,7 @@ namespace Uri {
         if (!impl_->host.empty()) {
             buffer << "//";
             if(!impl_->userInfo.name.empty()) {
-                buffer << impl_->userInfo.name;
+                buffer << impl_->EncodeElement(impl_->userInfo.name, USER_INFO_CHAR);
                 if(!impl_->userInfo.pass.empty()) {
                     buffer << ':' << impl_->userInfo.pass;
                 }
@@ -1002,7 +1056,7 @@ namespace Uri {
         }
         size_t i = 0;
         for(const auto& segment: impl_->path) {
-            buffer << segment;
+            buffer << impl_->EncodeElement(segment, PCHAR_NOT_PCT_ENCODED);
             if (i + 1 < impl_->path.size()) {
                 buffer << '/';
             }
@@ -1010,10 +1064,10 @@ namespace Uri {
         }
         
         if (impl_->hasQuery) {
-            buffer << '?' << impl_->query;
+            buffer << '?' << impl_->EncodeElement(impl_->query, QUERY_OR_FRAGMENT_CHAR);
         }
         if (impl_->hasFragment) {
-            buffer << '#' << impl_->fragment;
+            buffer << '#' << impl_->EncodeElement(impl_->fragment, QUERY_OR_FRAGMENT_CHAR);
         }
         
         return buffer.str();
