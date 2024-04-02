@@ -94,6 +94,8 @@ namespace {
         Uri::CharacterSet('a', 'f')
     };
 
+
+
     /**
      * This fuction parses the given string as an unsigned 16-bit
      * integer, detecting invalid characters, overflow, etc..
@@ -294,7 +296,7 @@ namespace {
                     if (c == ':') {
                         numDigits = 0;
                         ++numGroups;
-                        state = 2;
+                        state = 5;
                     } else if (HEXDIGIT.Contains(c)) {
                         if (++numDigits > 4) {
                             return false;
@@ -308,6 +310,7 @@ namespace {
                     if (c == ':') {
                         numDigits = 0;
                         ++numGroups;
+                        state = 2;
                     } else if (c == '.') {
                         ipv4AddressEncountered = true;
                         break;
@@ -324,6 +327,26 @@ namespace {
                         return false;
                     }
                 } break;
+
+                case 5: {
+                    if (c == ':') {
+                        if (doubleColonEncountered) {
+                            return false;
+                        } else {
+                            doubleColonEncountered = true;
+                            state = 2;
+                        }
+                    } else if (DIGIT.Contains(c)) {
+                        potentialIPv4AddressStart = position;
+                        ++numDigits;
+                        state = 4;
+                    } else if (HEXDIGIT.Contains(c)) {
+                        ++numDigits;
+                        state = 3;
+                    } else {
+                        return false;
+                    }
+                } break;
             }
             if (ipv4AddressEncountered) {
                 break;
@@ -333,7 +356,7 @@ namespace {
         if (state == 4) {
             ++numGroups;
         }
-        if ((state == 1) && position == address.length()) { // trailing single colon
+        if (((state == 1)  || (state == 2) || (state == 5)) && position == address.length()) { // trailing single colon
             return false;
         } if (ipv4AddressEncountered) {
             if (!ValidateIPv4Address(address.substr(potentialIPv4AddressStart))) {
@@ -1043,9 +1066,9 @@ namespace Uri {
                 buffer << '@';
             }
             if (ValidateIPv6Address(impl_->host)) {
-                buffer << '[' << impl_->host << ']';
+                buffer << '[' << NormalizeCaseInsensitiveString( impl_->host ) << ']';
             } else {
-                buffer << impl_->host;
+                buffer << impl_->EncodeElement(impl_->host, REG_NAME_NOT_PCT_ENCODED);
             }
             if (impl_->hasPort && (impl_->port > 0)) {
                 buffer << ':' << impl_->port;
