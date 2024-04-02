@@ -779,22 +779,24 @@ TEST(UriTests, GenerateStringFromUriElements_Test) {
         bool hasPort;
         uint16_t port;
         std::vector<std::string> path;
+        bool hasQuery;
         std::string query;
+        bool hasFragment;
         std::string fragment;
         std::string expectedUriString;
     };
     const std::vector< TestVector > testVectors {
-        {"http",     {"", ""}, "www.example.com",   true,   8080,   {"", "path1", "path2"}, "library",    "book", "http://www.example.com:8080/path1/path2?library#book"},
-        {"",         {"", ""}, "example.com",       false,  0,      {}, "book",       "",  "//example.com?book"},
-        {"",         {"", ""}, "example.com",       true,   8080,   {""}, "",           "", "//example.com:8080/"},
-        {"",         {"", ""}, "",                  false,   0,     {}, "bar",        "", "?bar"},
-        {"http",     {"", ""}, "",                  false,   0,     {}, "bar",        "", "http:?bar"},
-        {"http",     {"", ""}, "",                  false,   0,     {}, "",           "", "http:"},
-        {"http",     {"", ""}, "::1",               false,   0,     {}, "",           "", "http://[::1]"},
-        {"http",     {"", ""}, "::1.2.3.4",         false,   0,     {}, "",           "", "http://[::1.2.3.4]"},
-        {"http",     {"", ""}, "1.2.3.4",           false,   0,     {}, "",           "", "http://1.2.3.4"},
-        {"",         {"", ""}, "",                  false,   0,     {}, "",           "", ""},
-        {"",         {"", ""}, "",                  false,   0,     {"", "abc", ""}, "",           "", "/abc/"},
+        {"http",     {"", ""}, "www.example.com",   true,   8080,   {"", "path1", "path2"}, true, "library",    true, "book", "http://www.example.com:8080/path1/path2?library#book"},
+        {"",         {"", ""}, "example.com",       false,  0,      {},                     true, "book",       false, "",  "//example.com?book"},
+        {"",         {"", ""}, "example.com",       true,   8080,   {""},                   false, "",           false, "", "//example.com:8080/"},
+        {"",         {"", ""}, "",                  false,   0,     {},                     true, "bar",        false, "", "?bar"},
+        {"http",     {"", ""}, "",                  false,   0,     {},                     true, "bar",        false, "", "http:?bar"},
+        {"http",     {"", ""}, "",                  false,   0,     {},                     false, "",           false, "", "http:"},
+        {"http",     {"", ""}, "::1",               false,   0,     {},                     false, "",           false, "", "http://[::1]"},
+        {"http",     {"", ""}, "::1.2.3.4",         false,   0,     {},                     false, "",           false, "", "http://[::1.2.3.4]"},
+        {"http",     {"", ""}, "1.2.3.4",           false,   0,     {},                     false, "",           false, "", "http://1.2.3.4"},
+        {"",         {"", ""}, "",                  false,   0,     {},                     false, "",           false, "", ""},
+        {"",         {"", ""}, "",                  false,   0,     {"", "abc", ""},        false, "",           false, "", "/abc/"},
     };
     size_t index = 0;
     for (const auto& test: testVectors) {
@@ -803,14 +805,54 @@ TEST(UriTests, GenerateStringFromUriElements_Test) {
         uri.SetUserName(test.userInfo.name);
         uri.SetUserPass(test.userInfo.pass);
         uri.SetHost(test.stringhost);
-        uri.SetPort(test.port);
+        if(test.hasPort) {
+            uri.SetPort(test.port);
+        }
         uri.SetPath(test.path);
-        uri.SetQuery(test.query);
-        uri.SetFragment(test.fragment);
+        if (test.hasQuery) {
+            uri.SetQuery(test.query);
+        }
+        if (test.hasFragment) {
+            uri.SetFragment(test.fragment);
+        }
         const auto actualUriString = uri.GenerateString();
         ASSERT_EQ(test.expectedUriString, actualUriString) << index;
-        ASSERT_EQ(test.hasPort, uri.HasPort());
+        ASSERT_EQ(test.hasPort, uri.HasPort()) << index;
         ++index;
     }
 
+}
+
+TEST(UriTests, FragmentEmptyButPresent_Test) {
+    Uri::Uri uri;
+    ASSERT_TRUE(uri.ParseFromString("http://example.com#"));
+    ASSERT_TRUE(uri.HasFragment());
+    ASSERT_EQ("", uri.GetFragment());
+    ASSERT_EQ("http://example.com/#", uri.GenerateString()) << 1;
+    uri.ClearFragment();
+    ASSERT_EQ("http://example.com/", uri.GenerateString()) << 2;
+    ASSERT_FALSE(uri.HasFragment());
+    ASSERT_TRUE(uri.ParseFromString("http://example.com"));
+    ASSERT_FALSE(uri.HasFragment());
+    uri.SetFragment("");
+    ASSERT_TRUE(uri.HasFragment());
+    ASSERT_EQ("", uri.GetFragment());
+    ASSERT_EQ("http://example.com/#", uri.GenerateString()) << 3;
+}
+
+TEST(UriTests, QueryEmptyButPresent) {
+    Uri::Uri uri;
+    ASSERT_TRUE(uri.ParseFromString("http://example.com?"));
+    ASSERT_TRUE(uri.HasQuery());
+    ASSERT_EQ("", uri.GetQuery());
+    ASSERT_EQ("http://example.com/?", uri.GenerateString()) << 1;
+    uri.ClearQuery();
+    ASSERT_EQ("http://example.com/", uri.GenerateString()) << 2;
+    ASSERT_FALSE(uri.HasQuery());
+    ASSERT_TRUE(uri.ParseFromString("http://example.com"));
+    ASSERT_FALSE(uri.HasQuery());
+    uri.SetQuery("");
+    ASSERT_TRUE(uri.HasQuery());
+    ASSERT_EQ("", uri.GetQuery());
+    ASSERT_EQ("http://example.com/?", uri.GenerateString()) << 3;
 }

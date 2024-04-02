@@ -385,30 +385,47 @@ namespace Uri {
          * This is the scheme elemen of the Uri.  
         */
         std::string scheme;
+
         /**
          * This is the host element of the Uri.
         */
         std::string host;
+
         /**
          * This is the path elements vector of the Uri.
         */
         std::vector<std::string> path;
+
         /**
          * This is the port element of the Uri.
         */
         uint16_t port = 0;
+
         /**
          * This is an indication of whether or not the Uri has a port number.
         */
         bool hasPort = false;
+
         /**
          * This is the query element of the Uri.
         */
         std::string query;
+
+        /**
+        * This is an indication of whether or not the Uri has a query.
+        */
+        bool hasQuery = false;
+
+        /**
+        * This is an indication of whether or not the Uri has a fragment.
+        */
+        bool hasFragment = false;
+
         /**
          * This is the fragment element of the Uri.
         */
         std::string fragment;
+
         /**
          * This is the User info structure.
         */
@@ -748,8 +765,10 @@ namespace Uri {
         bool ParseFragment(std::string& elements) {
             const auto fragmentDelimiter = elements.find('#');
             if (fragmentDelimiter == std::string::npos) {
+                hasFragment = false;
                 fragment.clear();
             } else {
+                hasFragment = true;
                 fragment = elements.substr(fragmentDelimiter + 1);
             }
             if(!DecodeQueryOrFragment(fragment)) {
@@ -772,6 +791,7 @@ namespace Uri {
             const auto queryDelimiter = elements.find('?');
             const auto fragmentDelimiter = elements.find('#');
             if (queryDelimiter == std::string::npos) {
+                hasQuery = false;
                 query.clear();
             } else {
                 if (fragmentDelimiter != std::string::npos) {
@@ -779,6 +799,7 @@ namespace Uri {
                 } else {
                     query = elements.substr(queryDelimiter + 1);
                 }
+                hasQuery = true;
             }
             if(!DecodeQueryOrFragment(query)) {
                 return false;
@@ -925,15 +946,27 @@ namespace Uri {
 
     void Uri::SetPort(uint16_t port) {
         impl_->port = port;
+        if (port > 0) {
+            impl_->hasPort = true;
+        }
     }
+
+    void Uri::ClearPort() {
+        impl_->hasPort = false;
+    }
+
 
     void Uri::SetQuery(const std::string& query) {
         impl_->query = query;
+        impl_->hasQuery = true;
     }
 
     void Uri::SetFragment(const std::string& fragment) {
-        impl_->fragment = fragment;    
+        impl_->fragment = fragment;
+        impl_->hasFragment = true;    
     }
+
+
 
     void Uri::SetPath(const std::vector<std::string>& path) {
         for(auto& segment: path) {
@@ -960,8 +993,7 @@ namespace Uri {
             } else {
                 buffer << impl_->host;
             }
-            if (impl_->port > 0) {
-                impl_->hasPort = true;
+            if (impl_->hasPort && (impl_->port > 0)) {
                 buffer << ':' << impl_->port;
             }            
         }
@@ -977,10 +1009,10 @@ namespace Uri {
             ++i;
         }
         
-        if (!impl_->query.empty()) {
+        if (impl_->hasQuery) {
             buffer << '?' << impl_->query;
         }
-        if (!impl_->fragment.empty()) {
+        if (impl_->hasFragment) {
             buffer << '#' << impl_->fragment;
         }
         
@@ -1028,6 +1060,24 @@ namespace Uri {
     
     std::string Uri::GetQuery() const {
         return impl_->query;
+    }
+
+    bool Uri::HasQuery() const {
+        return impl_->hasQuery;
+    }
+
+    void Uri::ClearQuery() {
+        impl_->hasQuery = false;
+    }
+
+    bool Uri::HasFragment() const 
+    {
+        return impl_->hasFragment;
+    }
+
+    void Uri::ClearFragment()
+    {
+        impl_->hasFragment = false;
     }
 
     std::string Uri::GetFragment() const

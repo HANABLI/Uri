@@ -133,6 +133,8 @@ namespace Uri {
        */
        bool HasPort() const;
 
+       void ClearPort();
+
 
         /**
          * This method returns the port number of the UrI if it exists.
@@ -170,6 +172,16 @@ namespace Uri {
 
 
         /**
+        * This method returns an indication of whether or not the URI
+        * includes a query.
+        * 
+        * @return
+        *       true if the URI includes a query else false.
+        */
+        bool HasQuery() const;   
+
+        void ClearQuery();
+        /**
          * This methode returns the query element of the Uri string if it exists.
          * 
          * @return
@@ -177,6 +189,16 @@ namespace Uri {
         */
        std::string GetQuery() const;
 
+        /**
+        * This method returns an indication of whether or not the URI
+        * includes a fragment.
+        * 
+        * @return
+        *       true if the URI includes a fragment else false.
+        */
+        bool HasFragment() const;   
+
+        void ClearFragment();
         /**
          * This method returns the fragment of the Uri string if it exists.
          * 
