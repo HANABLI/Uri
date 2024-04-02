@@ -353,7 +353,7 @@ namespace {
             }
             ++position;
         }
-        if (state == 4) {
+        if ((state == 4) || (state == 3)) {
             ++numGroups;
         }
         if (((state == 1)  || (state == 2) || (state == 5)) && position == address.length()) { // trailing single colon
