@@ -1054,9 +1054,7 @@ namespace Uri {
 
 
     void Uri::SetPath(const std::vector<std::string>& path) {
-        for(auto& segment: path) {
-            impl_->path.push_back(segment);
-        }
+        impl_->path = path;
     }
 
     std::string Uri::GenerateString() const {
