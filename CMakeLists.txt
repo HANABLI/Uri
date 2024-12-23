@@ -10,19 +10,21 @@ set(Headers
     include/Uri/Uri.hpp
     src/PercentEncodedCharacterDecoder.hpp
     src/CharacterSet.hpp
-    src/NormalizeCaseInsensitiveString.hpp
 )
 
 set(Sources 
     src/Uri.cpp
     src/PercentEncodedCharacterDecoder.cpp
     src/CharacterSet.cpp
-    src/NormalizeCaseInsensitiveString.cpp
 )
 
 add_library(${this} STATIC ${Sources} ${Headers})
 set_target_properties(${this} PROPERTIES 
     FOLDER Libraries
+)
+
+target_link_libraries(${this} PUBLIC
+    StringUtils
 )
 
 target_include_directories(${this} PUBLIC include)

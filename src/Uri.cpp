@@ -7,9 +7,9 @@
 */
 
 #include "CharacterSet.hpp"
-#include "NormalizeCaseInsensitiveString.hpp"
 #include "PercentEncodedCharacterDecoder.hpp"
 
+#include <StringUtils/StringUtils.hpp>
 #include <Uri/Uri.hpp>
 
 namespace {
@@ -822,7 +822,7 @@ namespace Uri {
                 hasPort = true;
             }
             if (isRegChar) {
-                host = NormalizeCaseInsensitiveString(encodedHostName);
+                host = StringUtils::NormalizeCaseInsensitiveString(encodedHostName);
             } else {
                 host = encodedHostName;
             }
@@ -973,7 +973,7 @@ namespace Uri {
             if(FailsMatch(impl_->scheme, LegalSchemeStartegy())) {
                 return false;
             }
-            impl_->scheme = NormalizeCaseInsensitiveString(impl_->scheme);
+            impl_->scheme = StringUtils::NormalizeCaseInsensitiveString(impl_->scheme);
             next = uriString.substr(schemeEnd + 1);
         }
         
@@ -1072,7 +1072,7 @@ namespace Uri {
                 buffer << '@';
             }
             if (ValidateIPv6Address(impl_->host)) {
-                buffer << '[' << NormalizeCaseInsensitiveString( impl_->host ) << ']';
+                buffer << '[' << StringUtils::NormalizeCaseInsensitiveString( impl_->host ) << ']';
             } else {
                 buffer << impl_->EncodeElement(impl_->host, REG_NAME_NOT_PCT_ENCODED);
             }

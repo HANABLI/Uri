@@ -8,7 +8,6 @@ set(this UriTests)
 set(Sources 
     src/UriTests.cpp
     src/CharacterSetTests.cpp
-    src/NormalizeCaseInsensitiveStringTests.cpp
     src/PercentEncodedCharacterDecoderTests.cpp
 )
 
@@ -22,6 +21,7 @@ target_include_directories(${this} PRIVATE ..)
 target_link_libraries(${this} PUBLIC 
     gtest_main 
     Uri
+    StringUtils
 )
 
 add_test(
