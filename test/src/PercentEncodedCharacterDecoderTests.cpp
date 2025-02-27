@@ -1,10 +1,10 @@
 /**
  * @file PercentEncodedCharacterDecoderTests.cpp
- * 
- * This module contains unit Tests of the Uri::PercentEncodedCharacterDecoder class 
- * 
+ *
+ * This module contains unit Tests of the Uri::PercentEncodedCharacterDecoder class
+ *
  * © 2024 by Hatem Nabli
-*/
+ */
 #include <gtest/gtest.h>
 #include <src/PercentEncodedCharacterDecoder.hpp>
 
