@@ -889,7 +889,7 @@ TEST(UriTests, GenerateStringFromUriElements_Test) {
          "c 2",
          "http://bob@www.example.com:8080/abc/def?foobar#c%202"},
         //{"http", {"bob", ""}, "ሴ.example.com",   true,  8080, {"", "abc", "def"}, true,  "foobar",
-        //false, "",    "http://bob@%E1%88%B4.example.com:8080/abc/def?foobar"},
+        // false, "",    "http://bob@%E1%88%B4.example.com:8080/abc/def?foobar"},
 
         {"http",
          {"bob", ""},
