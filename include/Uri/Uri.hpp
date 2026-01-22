@@ -31,7 +31,9 @@ namespace Uri
             name.clear();
             pass.clear();
         }
-        bool operator==(UserInfo& other) { return ((name == other.name) && (pass == other.pass)); }
+        bool operator==(const UserInfo& other) const {
+            return ((name == other.name) && (pass == other.pass));
+        }
     };
 
     /**

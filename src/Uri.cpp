@@ -588,7 +588,7 @@ namespace Uri
          */
         bool ParsePath(std::string& pathString) {
             path.clear();
-            if (pathString._Equal("/"))
+            if (pathString == "/")
             {
                 // Special case of an empty path.
                 path.push_back("");
