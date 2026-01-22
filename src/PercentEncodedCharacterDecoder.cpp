@@ -8,6 +8,8 @@
 
 #include "PercentEncodedCharacterDecoder.hpp"
 
+#include <cwctype>
+
 namespace
 {
     /**
