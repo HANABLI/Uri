@@ -5,26 +5,26 @@
 cmake_minimum_required(VERSION 3.20)
 set(this UriTests)
 
-set(Sources 
+set(Sources
     src/UriTests.cpp
     src/CharacterSetTests.cpp
     src/PercentEncodedCharacterDecoderTests.cpp
 )
 
 add_executable(${this} ${Sources})
-set_target_properties(${this} PROPERTIES 
+set_target_properties(${this} PROPERTIES
     FOLDER Tests
 )
 
 target_include_directories(${this} PRIVATE ..)
 
-target_link_libraries(${this} PUBLIC 
-    gtest_main 
+target_link_libraries(${this} PUBLIC
+    gtest_main
     Uri
     StringUtils
 )
 
 add_test(
-    NAME ${this} 
+    NAME ${this}
     COMMAND ${this}
 )

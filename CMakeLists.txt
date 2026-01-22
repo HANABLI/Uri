@@ -6,20 +6,20 @@
 cmake_minimum_required(VERSION 3.20)
 set(this Uri)
 
-set(Headers 
+set(Headers
     include/Uri/Uri.hpp
     src/PercentEncodedCharacterDecoder.hpp
     src/CharacterSet.hpp
 )
 
-set(Sources 
+set(Sources
     src/Uri.cpp
     src/PercentEncodedCharacterDecoder.cpp
     src/CharacterSet.cpp
 )
 
 add_library(${this} STATIC ${Sources} ${Headers})
-set_target_properties(${this} PROPERTIES 
+set_target_properties(${this} PROPERTIES
     FOLDER Libraries
 )
 
